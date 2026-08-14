@@ -1,25 +1,50 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import Home from "./pages/Home";
+import PredictRent from "./pages/PredictRent";
+import Compare from "./pages/Compare";
+import Recommendations from "./pages/Recommendations";
+import MarketAnalysis from "./pages/MarketAnalysis";
+import About from "./pages/About";
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
 
-        {/* We'll add these pages next */}
-        <Route path="/predict" element={<div>Predict Rent</div>} />
-        <Route path="/compare" element={<div>Compare Properties</div>} />
+      <Routes>
+
         <Route
-          path="/recommendations"
-          element={<div>Recommendations</div>}
+          path="/"
+          element={<Home />}
         />
+
         <Route
-          path="/market"
-          element={<div>Market Analysis</div>}
+          path="/predict"
+          element={<PredictRent />}
         />
-        <Route path="/about" element={<div>About RentSmart</div>} />
+
+        <Route
+  path="/compare"
+  element={<Compare />}
+/>
+
+        <Route
+  path="/recommendations"
+  element={<Recommendations />}
+/>
+
+        <Route
+  path="/market"
+  element={<MarketAnalysis />}
+/>
+
+        <Route
+  path="/about"
+  element={<About />}
+/>
+
       </Routes>
+
     </BrowserRouter>
   );
 }
