@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { predictRent } from "../services/api";
 
 function PredictRent() {
   const [formData, setFormData] = useState({
@@ -13,6 +14,8 @@ function PredictRent() {
   });
 
   const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,80 +26,40 @@ function PredictRent() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    // Temporary dummy prediction.
-    // Later this will come from our ML model through FastAPI.
+    try {
+      const prediction = await predictRent({
+        location: formData.location,
+        property_type: formData.propertyType,
+        bhk: Number(formData.bhk),
+        area_sqft: Number(formData.area),
+        bathrooms: Number(formData.bathrooms),
+        furnishing: formData.furnishing,
+        parking: formData.parking,
+      });
 
-    const area = Number(formData.area) || 900;
-    const bhk = Number(formData.bhk);
-
-    let estimatedRent = 7000;
-
-    estimatedRent += area * 7;
-    estimatedRent += bhk * 1500;
-
-    if (formData.furnishing === "Furnished") {
-      estimatedRent += 2500;
+      setResult({
+        rent: prediction.predicted_rent,
+        min: prediction.min_rent,
+        max: prediction.max_rent,
+        city: prediction.city,
+        locality: prediction.locality,
+        status: prediction.status,
+      });
+    } catch (err) {
+      setResult(null);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    if (formData.parking === "Yes") {
-      estimatedRent += 500;
-    }
-
-    estimatedRent = Math.round(estimatedRent / 500) * 500;
-
-    setResult({
-      rent: estimatedRent,
-      min: estimatedRent - 1500,
-      max: estimatedRent + 1500,
-    });
   };
 
   return (
     <div className="predict-page">
-
-      {/* NAVBAR */}
-
-      <nav className="navbar">
-        <div className="nav-container">
-
-          <Link to="/" className="logo">
-            <span className="logo-icon">⌂</span>
-            <span>
-              Rent<span>Smart</span>
-            </span>
-          </Link>
-
-          <div className="nav-links">
-            <Link to="/">Home</Link>
-
-            <Link to="/predict" className="active">
-              Predict Rent
-            </Link>
-
-            <Link to="/compare">
-              Compare
-            </Link>
-
-            <Link to="/recommendations">
-              Recommendations
-            </Link>
-
-            <Link to="/market">
-              Market
-            </Link>
-          </div>
-
-          <Link to="/predict" className="nav-button">
-            Get Started
-          </Link>
-
-        </div>
-      </nav>
-
-
       {/* PAGE HEADER */}
 
       <section className="predict-header">
@@ -331,11 +294,16 @@ function PredictRent() {
               </div>
 
 
+              {error ? (
+                <p className="form-error">{error}</p>
+              ) : null}
+
               <button
                 type="submit"
                 className="predict-button"
+                disabled={loading}
               >
-                Predict Fair Rent
+                {loading ? "Predicting..." : "Predict Fair Rent"}
                 <span>→</span>
               </button>
 
@@ -398,7 +366,7 @@ function PredictRent() {
 
                 <div className="price-status">
                   <span>✓</span>
-                  Fair Price Estimate
+                  {result.locality}, {result.city} · {result.status} estimate
                 </div>
 
                 <div className="price-range">
@@ -422,10 +390,9 @@ function PredictRent() {
                   </strong>
 
                   <p>
-                    This is an initial estimate based on the
-                    property details you provided. Our trained
-                    ML model will provide the actual prediction
-                    once the backend is connected.
+                    This estimate comes from the trained rent model
+                    using Raipur and Bhilai locality, BHK, area,
+                    furnishing, and parking.
                   </p>
 
                 </div>

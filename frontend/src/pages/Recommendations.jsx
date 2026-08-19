@@ -1,52 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-const properties = [
-  {
-    id: 1,
-    name: "Modern City Apartment",
-    location: "Raipur",
-    rent: 14000,
-    bhk: 2,
-    area: 950,
-    furnishing: "Furnished",
-    parking: "Yes",
-    match: 96,
-  },
-  {
-    id: 2,
-    name: "Green Valley Residence",
-    location: "Raipur",
-    rent: 15000,
-    bhk: 2,
-    area: 1000,
-    furnishing: "Furnished",
-    parking: "Yes",
-    match: 91,
-  },
-  {
-    id: 3,
-    name: "Premium Family Home",
-    location: "Bhilai",
-    rent: 16500,
-    bhk: 2,
-    area: 1100,
-    furnishing: "Semi-Furnished",
-    parking: "Yes",
-    match: 84,
-  },
-  {
-    id: 4,
-    name: "Compact Urban Home",
-    location: "Raipur",
-    rent: 12500,
-    bhk: 2,
-    area: 850,
-    furnishing: "Furnished",
-    parking: "No",
-    match: 79,
-  },
-];
+import { recommendListings } from "../services/api";
 
 function Recommendations() {
   const [preferences, setPreferences] = useState({
@@ -59,6 +13,8 @@ function Recommendations() {
   });
 
   const [recommendations, setRecommendations] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,107 +25,31 @@ function Recommendations() {
     });
   };
 
-  const findMatches = (e) => {
+  const findMatches = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const budget = Number(preferences.budget);
-    const area = Number(preferences.area);
-
-    const scored = properties.map((property) => {
-      let score = 0;
-
-      if (
-        property.location.toLowerCase() ===
-        preferences.location.toLowerCase()
-      ) {
-        score += 30;
-      }
-
-      if (property.bhk === Number(preferences.bhk)) {
-        score += 25;
-      }
-
-      if (property.rent <= budget) {
-        score += 20;
-      }
-
-      if (property.area >= area) {
-        score += 10;
-      }
-
-      if (property.furnishing === preferences.furnishing) {
-        score += 10;
-      }
-
-      if (property.parking === preferences.parking) {
-        score += 5;
-      }
-
-      return {
-        ...property,
-        match: Math.min(score, 100),
-      };
-    });
-
-    scored.sort((a, b) => b.match - a.match);
-
-    setRecommendations(scored);
+    try {
+      const matches = await recommendListings({
+        location: preferences.location,
+        budget: Number(preferences.budget),
+        bhk: Number(preferences.bhk),
+        min_area: Number(preferences.area),
+        furnishing: preferences.furnishing,
+        parking: preferences.parking,
+      });
+      setRecommendations(matches);
+    } catch (err) {
+      setRecommendations([]);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="recommendations-page">
-
-      {/* NAVBAR */}
-
-      <nav className="navbar">
-        <div className="nav-container">
-
-          <Link to="/" className="logo">
-            <span className="logo-icon">⌂</span>
-
-            <span>
-              Rent<span>Smart</span>
-            </span>
-          </Link>
-
-          <div className="nav-links">
-
-            <Link to="/">
-              Home
-            </Link>
-
-            <Link to="/predict">
-              Predict Rent
-            </Link>
-
-            <Link to="/compare">
-              Compare
-            </Link>
-
-            <Link
-              to="/recommendations"
-              className="active"
-            >
-              Recommendations
-            </Link>
-
-            <Link to="/market">
-              Market
-            </Link>
-
-          </div>
-
-          <Link
-            to="/predict"
-            className="nav-button"
-          >
-            Get Started
-          </Link>
-
-        </div>
-      </nav>
-
-
       {/* HEADER */}
 
       <section className="recommend-header">
@@ -389,11 +269,14 @@ function Recommendations() {
               </div>
 
 
+              {error ? <p className="form-error">{error}</p> : null}
+
               <button
                 type="submit"
                 className="find-match-button"
+                disabled={loading}
               >
-                Find My Best Matches
+                {loading ? "Finding matches..." : "Find My Best Matches"}
                 <span>→</span>
               </button>
 
@@ -493,7 +376,11 @@ function Recommendations() {
                         </span>
 
                         <span>
-                          🚗 Parking
+                          🚗 {property.parking}
+                        </span>
+
+                        <span>
+                          {property.status_label}
                         </span>
 
                       </div>

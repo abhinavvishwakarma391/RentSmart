@@ -1,0 +1,67 @@
+{
+  "best_model": "xgboost",
+  "features": [
+    "bhk",
+    "area_sqft",
+    "bathrooms",
+    "city",
+    "locality",
+    "property_type",
+    "furnishing",
+    "parking"
+  ],
+  "metrics": {
+    "linear_regression": {
+      "mae": 1997.96,
+      "rmse": 2791.05,
+      "r2": 0.9074
+    },
+    "random_forest": {
+      "mae": 1718.38,
+      "rmse": 2403.7,
+      "r2": 0.9313
+    },
+    "xgboost": {
+      "mae": 1453.76,
+      "rmse": 2037.16,
+      "r2": 0.9507
+    }
+  },
+  "localities": {
+    "Bhilai": [
+      "Charoda",
+      "Civic Centre",
+      "Junwani",
+      "Kohka",
+      "Maitri Nagar",
+      "Nehru Nagar",
+      "Power House",
+      "Risali",
+      "Sector 5",
+      "Sector 7",
+      "Sector 9",
+      "Shanti Nagar",
+      "Smriti Nagar",
+      "Supela"
+    ],
+    "Raipur": [
+      "Avanti Vihar",
+      "Civil Lines",
+      "Devendra Nagar",
+      "Kabir Nagar",
+      "Kachna",
+      "Katora Talab",
+      "Magneto Mall Area",
+      "Mowa",
+      "Naya Raipur",
+      "Pandri",
+      "Saddu",
+      "Sarona",
+      "Shankar Nagar",
+      "Telibandha",
+      "Vidhan Sabha Road"
+    ]
+  },
+  "n_train": 416,
+  "n_test": 104
+}
