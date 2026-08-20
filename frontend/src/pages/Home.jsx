@@ -4,44 +4,6 @@ function Home() {
   return (
     <div className="home-page">
 
-      {/* ================= NAVBAR ================= */}
-      <nav className="navbar">
-        <div className="nav-container">
-
-          <Link to="/" className="logo">
-            <span className="logo-icon">⌂</span>
-            <span>Rent<span>Smart</span></span>
-          </Link>
-
-          <div className="nav-links">
-            <Link to="/" className="active">
-              Home
-            </Link>
-
-            <Link to="/predict">
-              Predict Rent
-            </Link>
-
-            <Link to="/compare">
-              Compare
-            </Link>
-
-            <Link to="/recommendations">
-              Recommendations
-            </Link>
-
-            <Link to="/market">
-              Market
-            </Link>
-          </div>
-
-          <Link to="/predict" className="nav-button">
-            Get Started
-          </Link>
-
-        </div>
-      </nav>
-
 
       {/* ================= HERO SECTION ================= */}
       <section className="hero">
@@ -407,50 +369,6 @@ function Home() {
 
       </section>
 
-
-      {/* ================= FOOTER ================= */}
-      <footer className="footer">
-
-        <div className="footer-container">
-
-          <div className="footer-brand">
-
-            <div className="logo">
-              <span className="logo-icon">⌂</span>
-              <span>Rent<span>Smart</span></span>
-            </div>
-
-            <p>
-              Smarter rental decisions powered by data and AI.
-            </p>
-
-          </div>
-
-
-          <div className="footer-links">
-
-            <div>
-              <h4>Product</h4>
-              <Link to="/predict">Predict Rent</Link>
-              <Link to="/compare">Compare</Link>
-              <Link to="/recommendations">Recommendations</Link>
-            </div>
-
-            <div>
-              <h4>Explore</h4>
-              <Link to="/market">Market Analysis</Link>
-              <Link to="/about">About</Link>
-            </div>
-
-          </div>
-
-        </div>
-
-        <div className="footer-bottom">
-          © 2026 RentSmart. Built with Data & AI.
-        </div>
-
-      </footer>
 
     </div>
   );

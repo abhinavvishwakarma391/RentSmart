@@ -4,62 +4,6 @@ function About() {
   return (
     <div className="about-page">
 
-      {/* NAVBAR */}
-
-      <nav className="navbar">
-
-        <div className="nav-container">
-
-          <Link to="/" className="logo">
-
-            <span className="logo-icon">
-              ⌂
-            </span>
-
-            <span>
-              Rent<span>Smart</span>
-            </span>
-
-          </Link>
-
-
-          <div className="nav-links">
-
-            <Link to="/">
-              Home
-            </Link>
-
-            <Link to="/predict">
-              Predict Rent
-            </Link>
-
-            <Link to="/compare">
-              Compare
-            </Link>
-
-            <Link to="/recommendations">
-              Recommendations
-            </Link>
-
-            <Link to="/market">
-              Market
-            </Link>
-
-          </div>
-
-
-          <Link
-            to="/predict"
-            className="nav-button"
-          >
-            Get Started
-          </Link>
-
-        </div>
-
-      </nav>
-
-
       {/* HERO */}
 
       <section className="about-hero">

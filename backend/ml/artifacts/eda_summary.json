@@ -1,0 +1,186 @@
+{
+  "rows": 520,
+  "cities": [
+    {
+      "city": "Bhilai",
+      "count": 225,
+      "avg_rent": 11552.0,
+      "median_rent": 10900.0,
+      "min_rent": 3700,
+      "max_rent": 27300
+    },
+    {
+      "city": "Raipur",
+      "count": 295,
+      "avg_rent": 22191.0,
+      "median_rent": 20700.0,
+      "min_rent": 9300,
+      "max_rent": 50300
+    }
+  ],
+  "top_localities": [
+    {
+      "city": "Raipur",
+      "locality": "Telibandha",
+      "count": 18,
+      "avg_rent": 27933.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Civil Lines",
+      "count": 20,
+      "avg_rent": 24865.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Katora Talab",
+      "count": 20,
+      "avg_rent": 24765.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Shankar Nagar",
+      "count": 21,
+      "avg_rent": 24095.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Devendra Nagar",
+      "count": 19,
+      "avg_rent": 24068.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Saddu",
+      "count": 20,
+      "avg_rent": 22835.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Magneto Mall Area",
+      "count": 21,
+      "avg_rent": 21952.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Pandri",
+      "count": 20,
+      "avg_rent": 21920.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Kachna",
+      "count": 17,
+      "avg_rent": 21876.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Naya Raipur",
+      "count": 21,
+      "avg_rent": 21681.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Avanti Vihar",
+      "count": 20,
+      "avg_rent": 21340.0
+    },
+    {
+      "city": "Raipur",
+      "locality": "Kabir Nagar",
+      "count": 19,
+      "avg_rent": 19484.0
+    }
+  ],
+  "rent_by_bhk": [
+    {
+      "city": "Bhilai",
+      "bhk": 1,
+      "count": 36,
+      "avg_rent": 5817.0,
+      "avg_area": 5817.0
+    },
+    {
+      "city": "Bhilai",
+      "bhk": 2,
+      "count": 96,
+      "avg_rent": 9240.0,
+      "avg_area": 9240.0
+    },
+    {
+      "city": "Bhilai",
+      "bhk": 3,
+      "count": 60,
+      "avg_rent": 14253.0,
+      "avg_area": 14253.0
+    },
+    {
+      "city": "Bhilai",
+      "bhk": 4,
+      "count": 33,
+      "avg_rent": 19627.0,
+      "avg_area": 19627.0
+    },
+    {
+      "city": "Raipur",
+      "bhk": 1,
+      "count": 38,
+      "avg_rent": 11366.0,
+      "avg_area": 11366.0
+    },
+    {
+      "city": "Raipur",
+      "bhk": 2,
+      "count": 145,
+      "avg_rent": 18557.0,
+      "avg_area": 18557.0
+    },
+    {
+      "city": "Raipur",
+      "bhk": 3,
+      "count": 79,
+      "avg_rent": 27853.0,
+      "avg_area": 27853.0
+    },
+    {
+      "city": "Raipur",
+      "bhk": 4,
+      "count": 33,
+      "avg_rent": 37067.0,
+      "avg_area": 37067.0
+    }
+  ],
+  "correlation": {
+    "bhk": {
+      "bhk": 1.0,
+      "area_sqft": 0.936,
+      "bathrooms": 0.907,
+      "rent": 0.667
+    },
+    "area_sqft": {
+      "bhk": 0.936,
+      "area_sqft": 1.0,
+      "bathrooms": 0.855,
+      "rent": 0.68
+    },
+    "bathrooms": {
+      "bhk": 0.907,
+      "area_sqft": 0.855,
+      "bathrooms": 1.0,
+      "rent": 0.622
+    },
+    "rent": {
+      "bhk": 0.667,
+      "area_sqft": 0.68,
+      "bathrooms": 0.622,
+      "rent": 1.0
+    }
+  },
+  "furnishing_avg_rent": {
+    "Furnished": 19776.0,
+    "Semi-Furnished": 17670.0,
+    "Unfurnished": 16255.0
+  },
+  "raw_rows": 582,
+  "cleaned_rows": 520
+}
