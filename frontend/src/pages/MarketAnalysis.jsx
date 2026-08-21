@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Plot from "react-plotly.js";
-import MarketMap from "../components/MarketMap";
 import { fetchMarket } from "../services/api";
 
 const CITIES = ["Raipur", "Bhilai"];
 
 function formatRent(value) {
-  return `₹${value.toLocaleString("en-IN")}`;
+  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 }
 
 function formatChange(value) {
@@ -20,8 +19,15 @@ function MarketAnalysis() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  /*
+   * =====================================================
+   * LOAD MARKET DATA
+   * =====================================================
+   */
+
   useEffect(() => {
     setLoading(true);
+
     fetchMarket(city)
       .then((data) => {
         setMarket(data);
@@ -31,302 +37,743 @@ function MarketAnalysis() {
         setMarket(null);
         setError(err.message);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+      });
   }, [city]);
 
+
+  /*
+   * =====================================================
+   * BHK PIE CHART
+   * =====================================================
+   */
+
   const bhkChart = useMemo(() => {
+
     if (!market?.bhk_breakdown?.length) {
       return null;
     }
 
     return {
+
       data: [
         {
-          type: "bar",
-          x: market.bhk_breakdown.map((item) => item.label),
-          y: market.bhk_breakdown.map((item) => item.avg_rent),
-          marker: { color: "#4c7dff" },
-          hovertemplate: "Avg rent: ₹%{y:,}<extra></extra>",
+          type: "pie",
+
+          labels: market.bhk_breakdown.map(
+            (item) => `${item.bhk} BHK`
+          ),
+
+          values: market.bhk_breakdown.map(
+            (item) => item.avg_rent
+          ),
+
+          textinfo: "label+percent",
+
+          textposition: "inside",
+
+          hovertemplate:
+            "<b>%{label}</b><br>" +
+            "Average Rent: ₹%{value:,.0f}" +
+            "<extra></extra>",
+
+          hole: 0.35,
         },
       ],
+
       layout: {
-        margin: { t: 10, r: 10, b: 40, l: 60 },
-        paper_bgcolor: "transparent",
-        plot_bgcolor: "transparent",
-        yaxis: { title: "Average rent (₹)", tickprefix: "₹", separatethousands: true },
-        xaxis: { title: "Property type" },
+
         height: 320,
+
+        margin: {
+          l: 20,
+          r: 20,
+          t: 20,
+          b: 30,
+        },
+
+        showlegend: true,
+
+        legend: {
+          orientation: "h",
+          y: -0.05,
+        },
+
+        paper_bgcolor: "rgba(0,0,0,0)",
+
+        plot_bgcolor: "rgba(0,0,0,0)",
+
+        font: {
+          family: "Inter, system-ui, sans-serif",
+        },
+
       },
-      config: { displayModeBar: false, responsive: true },
+
+      config: {
+        responsive: true,
+        displayModeBar: false,
+      },
+
     };
+
   }, [market]);
 
+
+  /*
+   * =====================================================
+   * FURNISHING PIE CHART
+   * =====================================================
+   */
+
   const furnishingChart = useMemo(() => {
+
     if (!market?.furnishing_breakdown?.length) {
       return null;
     }
 
     return {
+
       data: [
         {
-          type: "bar",
-          x: market.furnishing_breakdown.map((item) => item.furnishing),
-          y: market.furnishing_breakdown.map((item) => item.avg_rent),
-          marker: { color: ["#7c5cff", "#4c7dff", "#34c38f"] },
-          hovertemplate: "Avg rent: ₹%{y:,}<extra></extra>",
+          type: "pie",
+
+          labels: market.furnishing_breakdown.map(
+            (item) => item.furnishing
+          ),
+
+          values: market.furnishing_breakdown.map(
+            (item) => item.avg_rent
+          ),
+
+          textinfo: "label+percent",
+
+          textposition: "inside",
+
+          hovertemplate:
+            "<b>%{label}</b><br>" +
+            "Average Rent: ₹%{value:,.0f}" +
+            "<extra></extra>",
+
+          hole: 0.35,
         },
       ],
+
       layout: {
-        margin: { t: 10, r: 10, b: 40, l: 60 },
-        paper_bgcolor: "transparent",
-        plot_bgcolor: "transparent",
-        yaxis: { title: "Average rent (₹)", tickprefix: "₹", separatethousands: true },
-        xaxis: { title: "Furnishing" },
+
         height: 320,
-      },
-      config: { displayModeBar: false, responsive: true },
-    };
-  }, [market]);
 
-  const cityChart = useMemo(() => {
-    if (!market?.city_comparison?.length) {
-      return null;
-    }
-
-    return {
-      data: [
-        {
-          type: "bar",
-          x: market.city_comparison.map((item) => item.city),
-          y: market.city_comparison.map((item) => item.avg_rent),
-          marker: { color: ["#4c7dff", "#34c38f"] },
-          hovertemplate: "Avg rent: ₹%{y:,}<extra></extra>",
+        margin: {
+          l: 20,
+          r: 20,
+          t: 20,
+          b: 30,
         },
-      ],
-      layout: {
-        margin: { t: 10, r: 10, b: 40, l: 60 },
-        paper_bgcolor: "transparent",
-        plot_bgcolor: "transparent",
-        yaxis: { title: "Average rent (₹)", tickprefix: "₹", separatethousands: true },
-        xaxis: { title: "City" },
-        height: 320,
+
+        showlegend: true,
+
+        legend: {
+          orientation: "h",
+          y: -0.05,
+        },
+
+        paper_bgcolor: "rgba(0,0,0,0)",
+
+        plot_bgcolor: "rgba(0,0,0,0)",
+
+        font: {
+          family: "Inter, system-ui, sans-serif",
+        },
+
       },
-      config: { displayModeBar: false, responsive: true },
+
+      config: {
+        responsive: true,
+        displayModeBar: false,
+      },
+
     };
+
   }, [market]);
+
 
   return (
+
     <div className="market-page">
-      <section className="market-header">
-        <div className="market-header-content">
-          <div className="section-label">RENTAL MARKET INTELLIGENCE</div>
+
+
+      {/* =====================================================
+          HERO
+      ===================================================== */}
+
+      <section className="market-hero">
+
+        <div className="market-hero-content">
+
+          <div className="section-label">
+            RENTAL MARKET INTELLIGENCE
+          </div>
+
           <h1>
             Understand the
             <span> rental market.</span>
           </h1>
+
           <p>
-            Explore rental prices, locality trends and property
-            insights powered by the live Raipur and Bhilai dataset.
+            Explore rental prices, property trends and
+            market insights across Raipur and Bhilai.
           </p>
+
         </div>
+
       </section>
 
+
+      {/* =====================================================
+          MARKET SECTION
+      ===================================================== */}
+
       <section className="market-section">
+
         <div className="market-container">
+
+
+          {/* =================================================
+              TOOLBAR
+          ================================================= */}
+
           <div className="market-toolbar">
+
             <div>
-              <h2>{city} Rental Market</h2>
+
+              <h2>
+                {city} Rental Market
+              </h2>
+
               <p>
+
                 {loading
                   ? "Loading market overview..."
-                  : `${market?.summary?.listing_count || 0} listings analyzed`}
+                  : `${
+                      market?.summary?.listing_count || 0
+                    } listings analyzed`}
+
               </p>
+
             </div>
+
 
             <select
               className="market-select"
               value={city}
-              onChange={(event) => setCity(event.target.value)}
+              onChange={(event) =>
+                setCity(event.target.value)
+              }
             >
+
               {CITIES.map((option) => (
-                <option key={option} value={option}>
+
+                <option
+                  key={option}
+                  value={option}
+                >
                   {option}
                 </option>
+
               ))}
+
             </select>
+
           </div>
 
-          {error ? <p className="form-error">{error}</p> : null}
+
+          {/* =================================================
+              ERROR
+          ================================================= */}
+
+          {error ? (
+
+            <p className="form-error">
+              {error}
+            </p>
+
+          ) : null}
+
 
           {market ? (
+
             <>
+
+
+              {/* =================================================
+                  MARKET STATISTICS
+              ================================================= */}
+
               <div className="market-stats">
-                <div className="market-stat-card">
-                  <div className="stat-icon blue">₹</div>
-                  <div>
-                    <span>AVERAGE RENT</span>
-                    <strong>{formatRent(market.summary.avg_rent)}</strong>
-                    <small>{formatChange(market.summary.peer_change_pct)}</small>
-                  </div>
-                </div>
+
+
+                {/* AVERAGE RENT */}
 
                 <div className="market-stat-card">
-                  <div className="stat-icon purple">≈</div>
-                  <div>
-                    <span>MEDIAN RENT</span>
-                    <strong>{formatRent(market.summary.median_rent)}</strong>
-                    <small>{market.summary.listing_count} active listings</small>
-                  </div>
-                </div>
 
-                <div className="market-stat-card">
-                  <div className="stat-icon green">↗</div>
-                  <div>
-                    <span>AVG. PRICE / SQ.FT</span>
-                    <strong>₹{market.summary.avg_price_per_sqft.toFixed(2)}</strong>
-                    <small>Based on listed rents</small>
+                  <div className="stat-icon blue">
+                    ₹
                   </div>
-                </div>
 
-                <div className="market-stat-card">
-                  <div className="stat-icon orange">★</div>
                   <div>
-                    <span>MOST AFFORDABLE</span>
-                    <strong>{market.summary.most_affordable_locality.name}</strong>
+
+                    <span>
+                      AVERAGE RENT
+                    </span>
+
+                    <strong>
+                      {formatRent(
+                        market.summary.avg_rent
+                      )}
+                    </strong>
+
                     <small>
-                      Avg. {formatRent(market.summary.most_affordable_locality.avg_rent)}/month
+                      {formatChange(
+                        market.summary.peer_change_pct
+                      )}
                     </small>
+
                   </div>
+
                 </div>
+
+
+                {/* MEDIAN RENT */}
+
+                <div className="market-stat-card">
+
+                  <div className="stat-icon purple">
+                    ≈
+                  </div>
+
+                  <div>
+
+                    <span>
+                      MEDIAN RENT
+                    </span>
+
+                    <strong>
+                      {formatRent(
+                        market.summary.median_rent
+                      )}
+                    </strong>
+
+                    <small>
+                      {market.summary.listing_count}
+                      {" "}active listings
+                    </small>
+
+                  </div>
+
+                </div>
+
+
+                {/* PRICE PER SQFT */}
+
+                <div className="market-stat-card">
+
+                  <div className="stat-icon green">
+                    ↗
+                  </div>
+
+                  <div>
+
+                    <span>
+                      AVG. PRICE / SQ.FT
+                    </span>
+
+                    <strong>
+                      ₹
+                      {Number(
+                        market.summary.avg_price_per_sqft
+                      ).toFixed(2)}
+                    </strong>
+
+                    <small>
+                      Based on listed rents
+                    </small>
+
+                  </div>
+
+                </div>
+
+
+                {/* MOST AFFORDABLE */}
+
+                <div className="market-stat-card">
+
+                  <div className="stat-icon orange">
+                    ★
+                  </div>
+
+                  <div>
+
+                    <span>
+                      MOST AFFORDABLE
+                    </span>
+
+                    <strong>
+                      {
+                        market.summary
+                          .most_affordable_locality
+                          .name
+                      }
+                    </strong>
+
+                    <small>
+                      Avg.{" "}
+                      {formatRent(
+                        market.summary
+                          .most_affordable_locality
+                          .avg_rent
+                      )}
+                      /month
+                    </small>
+
+                  </div>
+
+                </div>
+
               </div>
 
-              <div className="market-grid">
-                <div className="market-card">
-                  <div className="market-card-header">
-                    <div>
-                      <h3>Average Rent by BHK</h3>
-                      <p>Monthly rental prices in {city}</p>
-                    </div>
+
+              {/* =================================================
+                  COMBINED PIE CHART SECTION
+              ================================================= */}
+
+              <div className="market-card">
+
+                <div className="market-card-header">
+
+                  <div>
+
+                    <h3>
+                      Rental Breakdown
+                    </h3>
+
+                    <p>
+                      Average rent by BHK and furnishing type
+                    </p>
+
                   </div>
-                  {bhkChart ? (
-                    <Plot
-                      data={bhkChart.data}
-                      layout={bhkChart.layout}
-                      config={bhkChart.config}
-                      style={{ width: "100%" }}
-                      useResizeHandler
-                    />
-                  ) : null}
+
                 </div>
 
-                <div className="market-card">
-                  <div className="market-card-header">
-                    <div>
-                      <h3>Rent by Furnishing</h3>
-                      <p>How furnishing affects monthly rent</p>
-                    </div>
+
+                {/* TWO PIE CHARTS */}
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "1fr 1fr",
+                    gap: "30px",
+                    alignItems: "center",
+                  }}
+                >
+
+
+                  {/* =========================================
+                      BHK PIE CHART
+                  ========================================= */}
+
+                  <div>
+
+                    <h4
+                      style={{
+                        textAlign: "center",
+                        marginBottom: "0",
+                      }}
+                    >
+                      Average Rent by BHK
+                    </h4>
+
+                    {bhkChart ? (
+
+                      <Plot
+                        data={bhkChart.data}
+                        layout={bhkChart.layout}
+                        config={bhkChart.config}
+                        style={{
+                          width: "100%",
+                        }}
+                        useResizeHandler
+                      />
+
+                    ) : (
+
+                      <p
+                        style={{
+                          textAlign: "center",
+                        }}
+                      >
+                        No BHK data available.
+                      </p>
+
+                    )}
+
                   </div>
-                  {furnishingChart ? (
-                    <Plot
-                      data={furnishingChart.data}
-                      layout={furnishingChart.layout}
-                      config={furnishingChart.config}
-                      style={{ width: "100%" }}
-                      useResizeHandler
-                    />
-                  ) : null}
+
+
+                  {/* =========================================
+                      FURNISHING PIE CHART
+                  ========================================= */}
+
+                  <div>
+
+                    <h4
+                      style={{
+                        textAlign: "center",
+                        marginBottom: "0",
+                      }}
+                    >
+                      Rent by Furnishing
+                    </h4>
+
+                    {furnishingChart ? (
+
+                      <Plot
+                        data={furnishingChart.data}
+                        layout={furnishingChart.layout}
+                        config={furnishingChart.config}
+                        style={{
+                          width: "100%",
+                        }}
+                        useResizeHandler
+                      />
+
+                    ) : (
+
+                      <p
+                        style={{
+                          textAlign: "center",
+                        }}
+                      >
+                        No furnishing data available.
+                      </p>
+
+                    )}
+
+                  </div>
+
                 </div>
+
               </div>
 
-              <div className="market-grid">
-                <div className="market-card">
-                  <div className="market-card-header">
-                    <div>
-                      <h3>Raipur vs Bhilai</h3>
-                      <p>City-level average rent comparison</p>
-                    </div>
+
+              {/* =================================================
+                  LOCALITY OVERVIEW
+                  NO GRAPH / NO MAP
+              ================================================= */}
+
+              <div className="market-card">
+
+                <div className="market-card-header">
+
+                  <div>
+
+                    <h3>
+                      Locality Overview
+                    </h3>
+
+                    <p>
+                      Rental prices across localities
+                      in {city}
+                    </p>
+
                   </div>
-                  {cityChart ? (
-                    <Plot
-                      data={cityChart.data}
-                      layout={cityChart.layout}
-                      config={cityChart.config}
-                      style={{ width: "100%" }}
-                      useResizeHandler
-                    />
-                  ) : null}
+
                 </div>
 
-                <div className="market-card map-card">
-                  <div className="market-card-header">
-                    <div>
-                      <h3>Locality Rent Map</h3>
-                      <p>OpenStreetMap view of average rents by area</p>
-                    </div>
-                  </div>
-                  <MarketMap city={city} points={market.map_points} />
+
+                <div
+                  style={{
+                    padding: "20px 0",
+                    textAlign: "center",
+                  }}
+                >
+
+                  <strong>
+                    {market.localities?.length || 0}
+                  </strong>
+
+                  <p>
+                    localities analyzed
+                  </p>
+
                 </div>
+
               </div>
+
+
+              {/* =================================================
+                  LOCALITY TABLE
+              ================================================= */}
 
               <div className="market-card locality-card">
+
                 <div className="market-card-header">
+
                   <div>
-                    <h3>Locality Rental Prices</h3>
-                    <p>Compare rental prices across popular areas</p>
+
+                    <h3>
+                      Locality Rental Prices
+                    </h3>
+
+                    <p>
+                      Compare rental prices across
+                      popular areas
+                    </p>
+
                   </div>
+
                 </div>
+
 
                 <div className="locality-table-wrapper">
+
                   <table className="locality-table">
+
                     <thead>
+
                       <tr>
-                        <th>Locality</th>
-                        <th>Average Rent</th>
-                        <th>Vs City Avg</th>
-                        <th>Market Status</th>
+
+                        <th>
+                          Locality
+                        </th>
+
+                        <th>
+                          Average Rent
+                        </th>
+
+                        <th>
+                          Vs City Avg
+                        </th>
+
+                        <th>
+                          Market Status
+                        </th>
+
                       </tr>
+
                     </thead>
+
+
                     <tbody>
-                      {market.localities.map((locality) => (
-                        <tr key={locality.name}>
-                          <td>
-                            <strong>{locality.name}</strong>
-                          </td>
-                          <td>
-                            {formatRent(locality.avg_rent)}/month
-                          </td>
-                          <td>
-                            <span
-                              className={
-                                locality.change_pct >= 0 ? "change-up" : "change-down"
-                              }
-                            >
-                              {formatChange(locality.change_pct)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="market-status">{locality.status}</span>
-                          </td>
-                        </tr>
-                      ))}
+
+                      {market.localities?.map(
+                        (locality) => (
+
+                          <tr
+                            key={locality.name}
+                          >
+
+                            <td>
+
+                              <strong>
+                                {locality.name}
+                              </strong>
+
+                            </td>
+
+
+                            <td>
+
+                              {formatRent(
+                                locality.avg_rent
+                              )}
+
+                              /month
+
+                            </td>
+
+
+                            <td>
+
+                              <span
+                                className={
+                                  locality.change_pct >= 0
+                                    ? "change-up"
+                                    : "change-down"
+                                }
+                              >
+
+                                {formatChange(
+                                  locality.change_pct
+                                )}
+
+                              </span>
+
+                            </td>
+
+
+                            <td>
+
+                              <span className="market-status">
+
+                                {locality.status}
+
+                              </span>
+
+                            </td>
+
+                          </tr>
+
+                        )
+                      )}
+
                     </tbody>
+
                   </table>
+
                 </div>
+
               </div>
 
+
+              {/* =================================================
+                  MARKET INSIGHT
+              ================================================= */}
+
               <div className="market-insight">
-                <div className="insight-icon">✦</div>
-                <div>
-                  <span>RENTSMART MARKET INSIGHT</span>
-                  <h3>{market.insight.title}</h3>
-                  <p>{market.insight.body}</p>
+
+                <div className="insight-icon">
+                  ✦
                 </div>
+
+                <div>
+
+                  <span>
+                    RENTSMART MARKET INSIGHT
+                  </span>
+
+                  <h3>
+                    {market.insight.title}
+                  </h3>
+
+                  <p>
+                    {market.insight.body}
+                  </p>
+
+                </div>
+
               </div>
+
             </>
+
           ) : null}
+
         </div>
+
       </section>
+
     </div>
+
   );
 }
 

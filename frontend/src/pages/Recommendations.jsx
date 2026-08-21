@@ -5,6 +5,7 @@ import { recommendListings } from "../services/api";
 function Recommendations() {
   const [preferences, setPreferences] = useState({
     location: "Raipur",
+    locality: "",
     budget: 15000,
     bhk: "2",
     area: 900,
@@ -16,29 +17,118 @@ function Recommendations() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /*
+   * Localities from the actual rental dataset
+   */
+
+  const localities = {
+    Raipur: [
+      "Avanti Vihar",
+      "Civil Lines",
+      "Devendra Nagar",
+      "Kabir Nagar",
+      "Kachna",
+      "Katora Talab",
+      "Magneto Mall Area",
+      "Mowa",
+      "Naya Raipur",
+      "Pandri",
+      "Saddu",
+      "Sarona",
+      "Shankar Nagar",
+      "Telibandha",
+      "Vidhan Sabha Road",
+    ],
+
+    Bhilai: [
+      "Charoda",
+      "Civic Centre",
+      "Junwani",
+      "Kohka",
+      "Maitri Nagar",
+      "Nehru Nagar",
+      "Power House",
+      "Risali",
+      "Sector 5",
+      "Sector 7",
+      "Sector 9",
+      "Shanti Nagar",
+      "Smriti Nagar",
+      "Supela",
+    ],
+  };
+
+  /*
+   * Localities available for selected location
+   */
+
+  const availableLocalities =
+    localities[preferences.location] || [];
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setPreferences({
-      ...preferences,
-      [name]: value,
-    });
+    /*
+     * When location changes,
+     * reset locality.
+     */
+
+    if (name === "location") {
+      setPreferences({
+        ...preferences,
+        location: value,
+        locality: "",
+      });
+    } else {
+      setPreferences({
+        ...preferences,
+        [name]: value,
+      });
+    }
+
+    setRecommendations([]);
+    setError("");
   };
 
   const findMatches = async (e) => {
     e.preventDefault();
+
     setError("");
     setLoading(true);
+
+    /*
+     * Require locality
+     */
+
+    if (!preferences.location) {
+      setError("Please select a location.");
+      setLoading(false);
+      return;
+    }
+
+    if (!preferences.locality) {
+      setError("Please select a locality.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const matches = await recommendListings({
         location: preferences.location,
+
+        locality: preferences.locality,
+
         budget: Number(preferences.budget),
+
         bhk: Number(preferences.bhk),
+
         min_area: Number(preferences.area),
+
         furnishing: preferences.furnishing,
+
         parking: preferences.parking,
       });
+
       setRecommendations(matches);
     } catch (err) {
       setRecommendations([]);
@@ -50,6 +140,7 @@ function Recommendations() {
 
   return (
     <div className="recommendations-page">
+
       {/* HEADER */}
 
       <section className="recommend-header">
@@ -119,13 +210,62 @@ function Recommendations() {
                     Location
                   </label>
 
-                  <input
-                    type="text"
+                  <select
                     name="location"
                     value={preferences.location}
                     onChange={handleChange}
-                    placeholder="e.g. Raipur"
-                  />
+                    required
+                  >
+
+                    <option value="">
+                      Select Location
+                    </option>
+
+                    <option value="Raipur">
+                      Raipur
+                    </option>
+
+                    <option value="Bhilai">
+                      Bhilai
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                {/* LOCALITY */}
+
+                <div className="form-group">
+
+                  <label>
+                    Locality
+                  </label>
+
+                  <select
+                    name="locality"
+                    value={preferences.locality}
+                    onChange={handleChange}
+                    required
+                    disabled={!preferences.location}
+                  >
+
+                    <option value="">
+                      Select Locality
+                    </option>
+
+                    {availableLocalities.map(
+                      (locality) => (
+                        <option
+                          key={locality}
+                          value={locality}
+                        >
+                          {locality}
+                        </option>
+                      )
+                    )}
+
+                  </select>
 
                 </div>
 
@@ -269,15 +409,27 @@ function Recommendations() {
               </div>
 
 
-              {error ? <p className="form-error">{error}</p> : null}
+              {error ? (
+                <p className="form-error">
+                  {error}
+                </p>
+              ) : null}
+
 
               <button
                 type="submit"
                 className="find-match-button"
                 disabled={loading}
               >
-                {loading ? "Finding matches..." : "Find My Best Matches"}
-                <span>→</span>
+
+                {loading
+                  ? "Finding matches..."
+                  : "Find My Best Matches"}
+
+                <span>
+                  →
+                </span>
+
               </button>
 
             </form>
@@ -314,98 +466,54 @@ function Recommendations() {
 
               <div className="recommend-list">
 
-                {recommendations.map((property, index) => (
+                {recommendations.map(
+                  (property, index) => (
 
-                  <div
-                    className="recommend-property"
-                    key={property.id}
-                  >
+                    <div
+                      className="recommend-property"
+                      key={property.id}
+                    >
 
-                    <div className="recommend-image">
+                      <div className="recommend-image">
 
-                      {index === 0 && (
-                        <span className="best-badge">
-                          BEST MATCH
-                        </span>
-                      )}
-
-                    </div>
-
-
-                    <div className="recommend-info">
-
-                      <div className="recommend-title-row">
-
-                        <div>
-
-                          <h3>
-                            {property.name}
-                          </h3>
-
-                          <p>
-                            📍 {property.location}
-                          </p>
-
-                        </div>
-
-                        <div className="recommend-price">
-
-                          ₹{property.rent.toLocaleString("en-IN")}
-
-                          <small>
-                            /month
-                          </small>
-
-                        </div>
+                        {index === 0 && (
+                          <span className="best-badge">
+                            BEST MATCH
+                          </span>
+                        )}
 
                       </div>
 
 
-                      <div className="recommend-details">
+                      <div className="recommend-info">
 
-                        <span>
-                          🛏 {property.bhk} BHK
-                        </span>
-
-                        <span>
-                          📐 {property.area} sq.ft
-                        </span>
-
-                        <span>
-                          🛋 {property.furnishing}
-                        </span>
-
-                        <span>
-                          🚗 {property.parking}
-                        </span>
-
-                        <span>
-                          {property.status_label}
-                        </span>
-
-                      </div>
-
-
-                      <div className="recommend-bottom">
-
-                        <div className="match-score">
-
-                          <div className="match-circle">
-                            {property.match}%
-                          </div>
+                        <div className="recommend-title-row">
 
                           <div>
 
-                            <strong>
-                              {property.match >= 90
-                                ? "Excellent Match"
-                                : property.match >= 80
-                                ? "Good Match"
-                                : "Possible Match"}
-                            </strong>
+                            <h3>
+                              {property.name}
+                            </h3>
+
+                            <p>
+                              📍{" "}
+                              {property.location}
+                              {property.locality
+                                ? ` · ${property.locality}`
+                                : ""}
+                            </p>
+
+                          </div>
+
+                          <div className="recommend-price">
+
+                            ₹
+                            {property.rent.toLocaleString(
+                              "en-IN"
+                            )}
 
                             <small>
-                              Based on your preferences
+                              /month
                             </small>
 
                           </div>
@@ -413,20 +521,73 @@ function Recommendations() {
                         </div>
 
 
-                        <Link
-                          to="/predict"
-                          className="view-property"
-                        >
-                          Analyze →
-                        </Link>
+                        <div className="recommend-details">
+
+                          <span>
+                            🛏 {property.bhk} BHK
+                          </span>
+
+                          <span>
+                            📐 {property.area} sq.ft
+                          </span>
+
+                          <span>
+                            🛋 {property.furnishing}
+                          </span>
+
+                          <span>
+                            🚗 {property.parking}
+                          </span>
+
+                          <span>
+                            {property.status_label}
+                          </span>
+
+                        </div>
+
+
+                        <div className="recommend-bottom">
+
+                          <div className="match-score">
+
+                            <div className="match-circle">
+                              {property.match}%
+                            </div>
+
+                            <div>
+
+                              <strong>
+                                {property.match >= 90
+                                  ? "Excellent Match"
+                                  : property.match >= 80
+                                  ? "Good Match"
+                                  : "Possible Match"}
+                              </strong>
+
+                              <small>
+                                Based on your preferences
+                              </small>
+
+                            </div>
+
+                          </div>
+
+
+                          <Link
+                            to="/predict"
+                            className="view-property"
+                          >
+                            Analyze →
+                          </Link>
+
+                        </div>
 
                       </div>
 
                     </div>
 
-                  </div>
-
-                ))}
+                  )
+                )}
 
               </div>
 

@@ -36,9 +36,7 @@ function Home() {
                 <span>→</span>
               </Link>
 
-              <Link to="/compare" className="secondary-button">
-                Compare Properties
-              </Link>
+              
 
             </div>
 

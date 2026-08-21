@@ -24,12 +24,8 @@ function Navbar() {
           <Link to="/" className={isActive("/")}>
             Home
           </Link>
-          <Link to="/predict" className={isActive("/predict")}>
-            Predict Rent
-          </Link>
-          <Link to="/compare" className={isActive("/compare")}>
-            Compare
-          </Link>
+          
+        
           <Link to="/recommendations" className={isActive("/recommendations")}>
             Recommendations
           </Link>

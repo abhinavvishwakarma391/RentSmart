@@ -5,6 +5,7 @@ import { predictRent } from "../services/api";
 function PredictRent() {
   const [formData, setFormData] = useState({
     location: "",
+    locality: "",
     propertyType: "Apartment",
     bhk: "2",
     area: "",
@@ -17,28 +18,110 @@ function PredictRent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /*
+   * Localities from the actual rental data
+   */
+
+  const localities = {
+    Raipur: [
+      "Avanti Vihar",
+      "Civil Lines",
+      "Devendra Nagar",
+      "Kabir Nagar",
+      "Kachna",
+      "Katora Talab",
+      "Magneto Mall Area",
+      "Mowa",
+      "Naya Raipur",
+      "Pandri",
+      "Saddu",
+      "Sarona",
+      "Shankar Nagar",
+      "Telibandha",
+      "Vidhan Sabha Road",
+    ],
+
+    Bhilai: [
+      "Charoda",
+      "Civic Centre",
+      "Junwani",
+      "Kohka",
+      "Maitri Nagar",
+      "Nehru Nagar",
+      "Power House",
+      "Risali",
+      "Sector 5",
+      "Sector 7",
+      "Sector 9",
+      "Shanti Nagar",
+      "Smriti Nagar",
+      "Supela",
+    ],
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    /*
+     * When the location changes,
+     * clear the previously selected locality.
+     */
+
+    if (name === "location") {
+      setFormData({
+        ...formData,
+        location: value,
+        locality: "",
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+
+    setResult(null);
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
     setLoading(true);
+
+    /*
+     * Locality is required for prediction.
+     */
+
+    if (!formData.location) {
+      setError("Please select a location.");
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.locality) {
+      setError("Please select a locality.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const prediction = await predictRent({
         location: formData.location,
+        city: formData.location,
+        locality: formData.locality,
+
         property_type: formData.propertyType,
+
         bhk: Number(formData.bhk),
+
         area_sqft: Number(formData.area),
+
         bathrooms: Number(formData.bathrooms),
+
         furnishing: formData.furnishing,
+
         parking: formData.parking,
       });
 
@@ -58,8 +141,16 @@ function PredictRent() {
     }
   };
 
+  /*
+   * Get localities for selected city
+   */
+
+  const availableLocalities =
+    localities[formData.location] || [];
+
   return (
     <div className="predict-page">
+
       {/* PAGE HEADER */}
 
       <section className="predict-header">
@@ -97,7 +188,9 @@ function PredictRent() {
 
             <div className="form-heading">
 
-              <h2>Property Details</h2>
+              <h2>
+                Property Details
+              </h2>
 
               <p>
                 Tell us about the property you're evaluating.
@@ -116,14 +209,60 @@ function PredictRent() {
                   Location
                 </label>
 
-                <input
-                  type="text"
+                <select
                   name="location"
-                  placeholder="e.g. Raipur, Chhattisgarh"
                   value={formData.location}
                   onChange={handleChange}
                   required
-                />
+                >
+
+                  <option value="">
+                    Select Location
+                  </option>
+
+                  <option value="Raipur">
+                    Raipur
+                  </option>
+
+                  <option value="Bhilai">
+                    Bhilai
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              {/* LOCALITY */}
+
+              <div className="form-group">
+
+                <label>
+                  Locality
+                </label>
+
+                <select
+                  name="locality"
+                  value={formData.locality}
+                  onChange={handleChange}
+                  required
+                  disabled={!formData.location}
+                >
+
+                  <option value="">
+                    Select Locality
+                  </option>
+
+                  {availableLocalities.map((locality) => (
+                    <option
+                      key={locality}
+                      value={locality}
+                    >
+                      {locality}
+                    </option>
+                  ))}
+
+                </select>
 
               </div>
 
@@ -142,10 +281,21 @@ function PredictRent() {
                   onChange={handleChange}
                 >
 
-                  <option>Apartment</option>
-                  <option>House</option>
-                  <option>Villa</option>
-                  <option>Studio</option>
+                  <option>
+                    Apartment
+                  </option>
+
+                  <option>
+                    House
+                  </option>
+
+                  <option>
+                    Villa
+                  </option>
+
+                  <option>
+                    Studio
+                  </option>
 
                 </select>
 
@@ -168,11 +318,25 @@ function PredictRent() {
                     onChange={handleChange}
                   >
 
-                    <option value="1">1 BHK</option>
-                    <option value="2">2 BHK</option>
-                    <option value="3">3 BHK</option>
-                    <option value="4">4 BHK</option>
-                    <option value="5">5+ BHK</option>
+                    <option value="1">
+                      1 BHK
+                    </option>
+
+                    <option value="2">
+                      2 BHK
+                    </option>
+
+                    <option value="3">
+                      3 BHK
+                    </option>
+
+                    <option value="4">
+                      4 BHK
+                    </option>
+
+                    <option value="5">
+                      5+ BHK
+                    </option>
 
                   </select>
 
@@ -194,7 +358,9 @@ function PredictRent() {
                     required
                   />
 
-                  <small>sq.ft</small>
+                  <small>
+                    sq.ft
+                  </small>
 
                 </div>
 
@@ -217,10 +383,21 @@ function PredictRent() {
                     onChange={handleChange}
                   >
 
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4+</option>
+                    <option value="1">
+                      1
+                    </option>
+
+                    <option value="2">
+                      2
+                    </option>
+
+                    <option value="3">
+                      3
+                    </option>
+
+                    <option value="4">
+                      4+
+                    </option>
 
                   </select>
 
@@ -239,9 +416,17 @@ function PredictRent() {
                     onChange={handleChange}
                   >
 
-                    <option>Furnished</option>
-                    <option>Semi-Furnished</option>
-                    <option>Unfurnished</option>
+                    <option>
+                      Furnished
+                    </option>
+
+                    <option>
+                      Semi-Furnished
+                    </option>
+
+                    <option>
+                      Unfurnished
+                    </option>
 
                   </select>
 
@@ -266,7 +451,9 @@ function PredictRent() {
                       type="radio"
                       name="parking"
                       value="Yes"
-                      checked={formData.parking === "Yes"}
+                      checked={
+                        formData.parking === "Yes"
+                      }
                       onChange={handleChange}
                     />
 
@@ -281,7 +468,9 @@ function PredictRent() {
                       type="radio"
                       name="parking"
                       value="No"
-                      checked={formData.parking === "No"}
+                      checked={
+                        formData.parking === "No"
+                      }
                       onChange={handleChange}
                     />
 
@@ -294,17 +483,31 @@ function PredictRent() {
               </div>
 
 
+              {/* ERROR */}
+
               {error ? (
-                <p className="form-error">{error}</p>
+                <p className="form-error">
+                  {error}
+                </p>
               ) : null}
+
+
+              {/* BUTTON */}
 
               <button
                 type="submit"
                 className="predict-button"
                 disabled={loading}
               >
-                {loading ? "Predicting..." : "Predict Fair Rent"}
-                <span>→</span>
+
+                {loading
+                  ? "Predicting..."
+                  : "Predict Fair Rent"}
+
+                <span>
+                  →
+                </span>
+
               </button>
 
             </form>
@@ -340,6 +543,10 @@ function PredictRent() {
                   </div>
 
                   <div>
+                    ✓ Locality-based analysis
+                  </div>
+
+                  <div>
                     ✓ Property feature analysis
                   </div>
 
@@ -360,14 +567,31 @@ function PredictRent() {
                 </div>
 
                 <div className="result-price">
-                  ₹{result.rent.toLocaleString("en-IN")}
-                  <small>/month</small>
+
+                  ₹
+                  {Number(
+                    result.rent
+                  ).toLocaleString("en-IN")}
+
+                  <small>
+                    /month
+                  </small>
+
                 </div>
 
+
                 <div className="price-status">
-                  <span>✓</span>
-                  {result.locality}, {result.city} · {result.status} estimate
+
+                  <span>
+                    ✓
+                  </span>
+
+                  {result.locality},{" "}
+                  {result.city} ·{" "}
+                  {result.status} estimate
+
                 </div>
+
 
                 <div className="price-range">
 
@@ -376,12 +600,23 @@ function PredictRent() {
                   </p>
 
                   <strong>
-                    ₹{result.min.toLocaleString("en-IN")}
+
+                    ₹
+                    {Number(
+                      result.min
+                    ).toLocaleString("en-IN")}
+
                     {" – "}
-                    ₹{result.max.toLocaleString("en-IN")}
+
+                    ₹
+                    {Number(
+                      result.max
+                    ).toLocaleString("en-IN")}
+
                   </strong>
 
                 </div>
+
 
                 <div className="result-note">
 
@@ -391,11 +626,12 @@ function PredictRent() {
 
                   <p>
                     This estimate comes from the trained rent model
-                    using Raipur and Bhilai locality, BHK, area,
+                    using your location, locality, BHK, area,
                     furnishing, and parking.
                   </p>
 
                 </div>
+
 
                 <Link
                   to="/compare"
