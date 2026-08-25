@@ -1,0 +1,254 @@
+/* =========================================
+   RENTSMART NAVBAR
+   ========================================= */
+
+.navbar {
+  width: 100%;
+  height: 78px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 32px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e8ebf2;
+
+  position: sticky;
+  top: 0;
+
+  z-index: 1000;
+}
+
+
+/* =========================================
+   LOGO
+   ========================================= */
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  text-decoration: none;
+
+  color: #172033;
+
+  font-size: 25px;
+  font-weight: 800;
+}
+
+.navbar-logo > span {
+  color: #172033;
+}
+
+.navbar-logo > span > span {
+  color: #3461ff;
+}
+
+
+.navbar-logo-icon {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #3461ff;
+
+  color: #ffffff;
+
+  font-size: 20px;
+}
+
+
+/* =========================================
+   NAV LINKS
+   ========================================= */
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+
+  gap: 34px;
+}
+
+.navbar-links > a:not(.nav-button) {
+  color: #687083;
+
+  text-decoration: none;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  transition: color 0.2s ease;
+}
+
+.navbar-links > a:not(.nav-button):hover {
+  color: #3461ff;
+}
+
+.navbar-links > a.active {
+  color: #3461ff;
+}
+
+
+/* =========================================
+   GET STARTED
+   ========================================= */
+
+.nav-button {
+  min-width: 140px;
+  height: 52px;
+
+  padding: 0 22px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #172033;
+
+  color: #ffffff !important;
+
+  text-decoration: none;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-button:hover {
+  background: #263149;
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================================
+   LOGGED-IN ACCOUNT
+   ========================================= */
+
+.navbar-account {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+/* ACCOUNT ICON */
+
+.account-button {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #dce2ee;
+
+  border-radius: 50%;
+
+  background: #f7f9ff;
+
+  font-size: 20px;
+}
+
+
+/* USER ID */
+
+.navbar-user {
+  color: #172033;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+
+/* LOGOUT */
+
+.logout-button {
+  height: 42px;
+
+  padding: 0 16px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #fff1f1;
+
+  color: #c62828;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #ffe1e1;
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 800px) {
+
+  .navbar {
+    padding: 0 18px;
+  }
+
+  .navbar-links {
+    gap: 16px;
+  }
+
+  .navbar-links > a:not(.nav-button) {
+    font-size: 14px;
+  }
+
+  .navbar-logo {
+    font-size: 21px;
+  }
+
+  .navbar-logo-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .nav-button {
+    min-width: 110px;
+    height: 46px;
+
+    font-size: 14px;
+  }
+
+  .navbar-user {
+    display: none;
+  }
+
+  .logout-button {
+    padding: 0 12px;
+  }
+}

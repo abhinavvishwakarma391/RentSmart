@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 
-# Schema for creating a new property
+
+# ============================================================
+# PROPERTY SCHEMAS
+# ============================================================
+
 class PropertyBase(BaseModel):
     title: str
     location: str
@@ -14,12 +18,15 @@ class PropertyBase(BaseModel):
     parking: str = "Yes"
     rent: float
 
+
 class PropertyCreate(PropertyBase):
     pass
 
-# Schema for reading property data (the "response")
+
+# Schema for reading property data
 class Property(PropertyBase):
     id: int
+
     fair_rent: float | None = None
     status: str | None = None
     status_label: str | None = None
@@ -29,8 +36,12 @@ class Property(PropertyBase):
     longitude: float | None = None
 
     class Config:
-        from_attributes = True  # Allows Pydantic to read from SQLAlchemy objects
+        from_attributes = True
 
+
+# ============================================================
+# RENT PREDICTION SCHEMAS
+# ============================================================
 
 class RentPredictRequest(BaseModel):
     location: str = ""
@@ -57,6 +68,10 @@ class RentPredictResponse(BaseModel):
     difference_pct: float | None = None
 
 
+# ============================================================
+# LISTING SCHEMAS
+# ============================================================
+
 class Listing(BaseModel):
     id: int
     name: str
@@ -80,6 +95,10 @@ class Listing(BaseModel):
     match: int | None = None
 
 
+# ============================================================
+# COMPARE SCHEMAS
+# ============================================================
+
 class CompareRequest(BaseModel):
     ids: list[int]
 
@@ -95,6 +114,10 @@ class CompareResponse(BaseModel):
     best: CompareBest
 
 
+# ============================================================
+# RECOMMENDATION SCHEMAS
+# ============================================================
+
 class RecommendRequest(BaseModel):
     location: str = "Raipur"
     budget: float = 15000
@@ -103,6 +126,10 @@ class RecommendRequest(BaseModel):
     furnishing: str = "Furnished"
     parking: str = "Yes"
 
+
+# ============================================================
+# MARKET SCHEMAS
+# ============================================================
 
 class MarketLocality(BaseModel):
     name: str
@@ -165,3 +192,25 @@ class MarketResponse(BaseModel):
     city_comparison: list[MarketCityComparison]
     map_points: list[MarketMapPoint]
     insight: MarketInsight
+
+
+# ============================================================
+# USER AUTHENTICATION SCHEMAS
+# ============================================================
+
+class UserCreate(BaseModel):
+    user_id: str
+    password: str
+
+
+class UserLogin(BaseModel):
+    user_id: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    user_id: str
+
+    class Config:
+        from_attributes = True

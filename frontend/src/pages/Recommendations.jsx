@@ -1,519 +1,1013 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { recommendListings } from "../services/api";
 
 function Recommendations() {
   const [preferences, setPreferences] = useState({
     location: "Raipur",
-    locality: "",
-    budget: 15000,
-    bhk: "2",
+    budget: 20000,
+    bhk: 2,
     area: 900,
     furnishing: "Furnished",
     parking: "Yes",
   });
 
   const [recommendations, setRecommendations] = useState([]);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  /*
-   * Localities from the actual rental dataset
-   */
-
-  const localities = {
-    Raipur: [
-      "Avanti Vihar",
-      "Civil Lines",
-      "Devendra Nagar",
-      "Kabir Nagar",
-      "Kachna",
-      "Katora Talab",
-      "Magneto Mall Area",
-      "Mowa",
-      "Naya Raipur",
-      "Pandri",
-      "Saddu",
-      "Sarona",
-      "Shankar Nagar",
-      "Telibandha",
-      "Vidhan Sabha Road",
-    ],
-
-    Bhilai: [
-      "Charoda",
-      "Civic Centre",
-      "Junwani",
-      "Kohka",
-      "Maitri Nagar",
-      "Nehru Nagar",
-      "Power House",
-      "Risali",
-      "Sector 5",
-      "Sector 7",
-      "Sector 9",
-      "Shanti Nagar",
-      "Smriti Nagar",
-      "Supela",
-    ],
-  };
-
-  /*
-   * Localities available for selected location
-   */
-
-  const availableLocalities =
-    localities[preferences.location] || [];
+  const [error, setError] = useState("");
+  const [sortBy, setSortBy] = useState("match");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    /*
-     * When location changes,
-     * reset locality.
-     */
-
-    if (name === "location") {
-      setPreferences({
-        ...preferences,
-        location: value,
-        locality: "",
-      });
-    } else {
-      setPreferences({
-        ...preferences,
-        [name]: value,
-      });
-    }
-
-    setRecommendations([]);
-    setError("");
+    setPreferences((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+
+  // ---------------------------------------------------------
+  // NORMALIZE VALUES
+  // This prevents Furnished / furnished / FURNISHED mismatch
+  // ---------------------------------------------------------
+
+  const normalize = (value) => {
+    if (value === null || value === undefined) return "";
+
+    return String(value)
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]/g, " ")
+      .replace(/\s+/g, " ");
+  };
+
+  // ---------------------------------------------------------
+  // FIND RECOMMENDATIONS
+  // ---------------------------------------------------------
 
   const findMatches = async (e) => {
     e.preventDefault();
 
-    setError("");
     setLoading(true);
-
-    /*
-     * Require locality
-     */
-
-    if (!preferences.location) {
-      setError("Please select a location.");
-      setLoading(false);
-      return;
-    }
-
-    if (!preferences.locality) {
-      setError("Please select a locality.");
-      setLoading(false);
-      return;
-    }
+    setError("");
+    setRecommendations([]);
 
     try {
-      const matches = await recommendListings({
+      const response = await recommendListings({
         location: preferences.location,
-
-        locality: preferences.locality,
-
         budget: Number(preferences.budget),
-
         bhk: Number(preferences.bhk),
-
         min_area: Number(preferences.area),
-
         furnishing: preferences.furnishing,
-
         parking: preferences.parking,
       });
 
-      setRecommendations(matches);
+      // Backend may return:
+      // [ ... ]
+      // OR
+      // { recommendations: [...] }
+      // OR
+      // { properties: [...] }
+
+      let data = [];
+
+      if (Array.isArray(response)) {
+        data = response;
+      } else if (Array.isArray(response?.recommendations)) {
+        data = response.recommendations;
+      } else if (Array.isArray(response?.properties)) {
+        data = response.properties;
+      } else if (Array.isArray(response?.results)) {
+        data = response.results;
+      }
+
+      // -----------------------------------------------------
+      // IMPORTANT:
+      // Keep only matching furnishing when the user selects
+      // a specific furnishing type.
+      // -----------------------------------------------------
+
+      const selectedFurnishing =
+        normalize(preferences.furnishing);
+
+      const filteredData = data.filter((property) => {
+        const propertyFurnishing = normalize(
+          property.furnishing ??
+          property.furnishing_type ??
+          property.furnished ??
+          ""
+        );
+
+        // If backend didn't provide furnishing,
+        // don't incorrectly reject the property.
+        if (!propertyFurnishing) {
+          return true;
+        }
+
+        if (selectedFurnishing === "furnished") {
+          return (
+            propertyFurnishing === "furnished"
+          );
+        }
+
+        if (selectedFurnishing === "semi furnished") {
+          return (
+            propertyFurnishing === "semi furnished"
+          );
+        }
+
+        if (selectedFurnishing === "unfurnished") {
+          return (
+            propertyFurnishing === "unfurnished"
+          );
+        }
+
+        return true;
+      });
+
+      setRecommendations(filteredData);
+
+      if (filteredData.length === 0) {
+        setError(
+          "No properties found matching your selected preferences."
+        );
+      }
     } catch (err) {
-      setRecommendations([]);
-      setError(err.message);
+      console.error("Recommendation error:", err);
+
+      setError(
+        err?.message ||
+          "Unable to load recommendations. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------------------------------------------------------
+  // SORT
+  // ---------------------------------------------------------
+
+  const sortedRecommendations = useMemo(() => {
+    const list = [...recommendations];
+
+    const getRent = (property) =>
+      Number(
+        property.rent ??
+        property.monthly_rent ??
+        property.price ??
+        0
+      );
+
+    const getArea = (property) =>
+      Number(
+        property.area ??
+        property.size ??
+        property.sqft ??
+        property.square_feet ??
+        0
+      );
+
+    const getMatch = (property) =>
+      Number(
+        property.match ??
+        property.match_score ??
+        property.score ??
+        0
+      );
+
+    switch (sortBy) {
+      case "lowest":
+        return list.sort(
+          (a, b) => getRent(a) - getRent(b)
+        );
+
+      case "highest":
+        return list.sort(
+          (a, b) => getRent(b) - getRent(a)
+        );
+
+      case "area":
+        return list.sort(
+          (a, b) => getArea(b) - getArea(a)
+        );
+
+      case "match":
+      default:
+        return list.sort(
+          (a, b) => getMatch(b) - getMatch(a)
+        );
+    }
+  }, [recommendations, sortBy]);
+
+  // ---------------------------------------------------------
+  // PROPERTY HELPERS
+  // ---------------------------------------------------------
+
+  const getRent = (property) =>
+    Number(
+      property.rent ??
+      property.monthly_rent ??
+      property.price ??
+      0
+    );
+
+  const getArea = (property) =>
+    property.area ??
+    property.size ??
+    property.sqft ??
+    property.square_feet ??
+    "—";
+
+  const getBhk = (property) =>
+    property.bhk ??
+    property.bedrooms ??
+    property.bedroom ??
+    "—";
+
+  const getFurnishing = (property) =>
+    property.furnishing ??
+    property.furnishing_type ??
+    property.furnished ??
+    "—";
+
+  const getParking = (property) => {
+    const parking =
+      property.parking ??
+      property.parking_available ??
+      property.has_parking;
+
+    if (
+      parking === true ||
+      normalize(parking) === "yes" ||
+      normalize(parking) === "available"
+    ) {
+      return "Yes";
+    }
+
+    if (
+      parking === false ||
+      normalize(parking) === "no"
+    ) {
+      return "No";
+    }
+
+    return parking || "—";
+  };
+
+  const getLocation = (property) =>
+    property.locality ||
+    property.location ||
+    property.city ||
+    "Raipur";
+
+  const getName = (property) =>
+    property.name ||
+    property.title ||
+    `${getBhk(property)} BHK Apartment in ${getLocation(
+      property
+    )}`;
+
+  const getMatch = (property) =>
+    Number(
+      property.match ??
+      property.match_score ??
+      property.score ??
+      0
+    );
+
+  // ---------------------------------------------------------
+  // STYLES
+  // ---------------------------------------------------------
+
+  const styles = {
+    page: {
+      minHeight: "calc(100vh - 70px)",
+      background: "#f7f9fe",
+      padding: "30px 12px 60px",
+      boxSizing: "border-box",
+      fontFamily:
+        "Inter, Arial, Helvetica, sans-serif",
+      color: "#172033",
+    },
+
+    container: {
+      maxWidth: "1230px",
+      margin: "0 auto",
+    },
+
+    header: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "20px",
+      marginBottom: "28px",
+      flexWrap: "wrap",
+    },
+
+    heading: {
+      fontSize: "36px",
+      fontWeight: "700",
+      margin: "0",
+      color: "#172033",
+    },
+
+    controls: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "16px",
+    },
+
+    sortSelect: {
+      height: "48px",
+      minWidth: "160px",
+      border: "1px solid #d7ddec",
+      borderRadius: "10px",
+      padding: "0 14px",
+      background: "#fff",
+      color: "#172033",
+      fontSize: "15px",
+      outline: "none",
+      cursor: "pointer",
+    },
+
+    formCard: {
+      background: "#fff",
+      border: "1px solid #e2e6f0",
+      borderRadius: "16px",
+      padding: "24px",
+      marginBottom: "28px",
+      boxShadow:
+        "0 4px 18px rgba(23,32,51,0.05)",
+    },
+
+    formGrid: {
+      display: "grid",
+      gridTemplateColumns:
+        "repeat(auto-fit, minmax(160px, 1fr))",
+      gap: "18px",
+      alignItems: "end",
+    },
+
+    formGroup: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "7px",
+    },
+
+    label: {
+      fontSize: "14px",
+      fontWeight: "600",
+      color: "#4f5c73",
+    },
+
+    input: {
+      width: "100%",
+      height: "44px",
+      boxSizing: "border-box",
+      border: "1px solid #d7ddec",
+      borderRadius: "8px",
+      padding: "0 12px",
+      fontSize: "15px",
+      color: "#172033",
+      background: "#fff",
+      outline: "none",
+    },
+
+    select: {
+      width: "100%",
+      height: "44px",
+      boxSizing: "border-box",
+      border: "1px solid #d7ddec",
+      borderRadius: "8px",
+      padding: "0 10px",
+      fontSize: "15px",
+      color: "#172033",
+      background: "#fff",
+      outline: "none",
+      cursor: "pointer",
+    },
+
+    button: {
+      height: "44px",
+      border: "none",
+      borderRadius: "8px",
+      padding: "0 20px",
+      background: "#3461ff",
+      color: "#fff",
+      fontSize: "15px",
+      fontWeight: "700",
+      cursor: "pointer",
+    },
+
+    resultHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "16px",
+    },
+
+    resultTitle: {
+      margin: "0",
+      fontSize: "24px",
+      fontWeight: "700",
+    },
+
+    card: {
+      display: "flex",
+      minHeight: "245px",
+      background: "#fff",
+      border: "1px solid #dfe4ef",
+      borderRadius: "18px",
+      overflow: "hidden",
+      marginBottom: "18px",
+      boxShadow:
+        "0 3px 12px rgba(23,32,51,0.04)",
+    },
+
+    image: {
+      width: "22%",
+      minWidth: "200px",
+      background:
+        "linear-gradient(135deg, #dce5f6, #c6d3e9)",
+      position: "relative",
+    },
+
+    badge: {
+      position: "absolute",
+      top: "16px",
+      left: "16px",
+      padding: "7px 11px",
+      borderRadius: "6px",
+      background: "#3461ff",
+      color: "#fff",
+      fontSize: "11px",
+      fontWeight: "800",
+    },
+
+    cardBody: {
+      flex: "1",
+      padding: "26px 28px",
+    },
+
+    titleRow: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: "20px",
+    },
+
+    propertyTitle: {
+      margin: "0 0 7px",
+      fontSize: "20px",
+      fontWeight: "700",
+      color: "#172033",
+    },
+
+    location: {
+      margin: "0",
+      fontSize: "14px",
+      color: "#7b8497",
+    },
+
+    price: {
+      fontSize: "22px",
+      fontWeight: "800",
+      color: "#172033",
+      whiteSpace: "nowrap",
+    },
+
+    priceSmall: {
+      fontSize: "12px",
+      fontWeight: "400",
+      color: "#7b8497",
+    },
+
+    divider: {
+      height: "1px",
+      background: "#e5e8f0",
+      margin: "22px 0 16px",
+    },
+
+    details: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "18px",
+      fontSize: "13px",
+      color: "#687083",
+    },
+
+    bottom: {
+      marginTop: "22px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "20px",
+    },
+
+    match: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+    },
+
+    matchCircle: {
+      width: "48px",
+      height: "48px",
+      borderRadius: "50%",
+      background: "#eaf8f1",
+      color: "#15945d",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "13px",
+      fontWeight: "800",
+    },
+
+    matchText: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "3px",
+    },
+
+    matchStrong: {
+      fontSize: "14px",
+      color: "#172033",
+    },
+
+    matchSmall: {
+      fontSize: "12px",
+      color: "#7b8497",
+    },
+
+    analyze: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "11px 18px",
+      borderRadius: "9px",
+      background: "#eef2ff",
+      color: "#3461ff",
+      textDecoration: "none",
+      fontWeight: "700",
+      fontSize: "14px",
+    },
+
+    error: {
+      marginTop: "15px",
+      padding: "12px 15px",
+      background: "#fff1f1",
+      border: "1px solid #ffd5d5",
+      borderRadius: "8px",
+      color: "#c0392b",
+      fontSize: "14px",
+    },
+
+    empty: {
+      background: "#fff",
+      border: "1px solid #e2e6f0",
+      borderRadius: "16px",
+      padding: "50px 20px",
+      textAlign: "center",
+      color: "#687083",
+    },
+  };
+
   return (
-    <div className="recommendations-page">
+    <div style={styles.page}>
+      <div style={styles.container}>
 
-      {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
-      <section className="recommend-header">
+        <div style={styles.header}>
 
-        <div className="recommend-header-content">
-
-          <div className="section-label">
-            SMART RECOMMENDATIONS
-          </div>
-
-          <h1>
-            Find a home that
-            <span> fits you.</span>
+          <h1 style={styles.heading}>
+            Properties for you
           </h1>
 
-          <p>
-            Tell RentSmart what you're looking for and we'll
-            rank properties based on your preferences.
-          </p>
+          {recommendations.length > 0 && (
+            <div style={styles.controls}>
+
+              <span>
+                Sort by
+              </span>
+
+              <select
+                style={styles.sortSelect}
+                value={sortBy}
+                onChange={(e) =>
+                  setSortBy(e.target.value)
+                }
+              >
+                <option value="match">
+                  Best Match
+                </option>
+
+                <option value="lowest">
+                  Lowest Rent
+                </option>
+
+                <option value="highest">
+                  Highest Rent
+                </option>
+
+                <option value="area">
+                  Largest Area
+                </option>
+              </select>
+
+              <span>
+                {recommendations.length} properties found
+              </span>
+
+            </div>
+          )}
 
         </div>
 
-      </section>
 
+        {/* =================================================
+            SEARCH FORM
+        ================================================= */}
 
-      {/* MAIN */}
+        <div style={styles.formCard}>
 
-      <section className="recommend-section">
+          <form onSubmit={findMatches}>
 
-        <div className="recommend-container">
+            <div style={styles.formGrid}>
 
+              {/* LOCATION */}
 
-          {/* PREFERENCES */}
+              <div style={styles.formGroup}>
 
-          <div className="preferences-card">
+                <label style={styles.label}>
+                  Location
+                </label>
 
-            <div className="preferences-heading">
+                <select
+                  style={styles.select}
+                  name="location"
+                  value={preferences.location}
+                  onChange={handleChange}
+                >
+                  <option value="Raipur">
+                    Raipur
+                  </option>
 
-              <div>
-
-                <h2>
-                  Your Preferences
-                </h2>
-
-                <p>
-                  Tell us what you're looking for.
-                </p>
+                  <option value="Bhilai">
+                    Bhilai
+                  </option>
+                </select>
 
               </div>
 
-              <div className="ai-badge">
-                ✦ AI Matching
+
+              {/* BUDGET */}
+
+              <div style={styles.formGroup}>
+
+                <label style={styles.label}>
+                  Maximum Budget
+                </label>
+
+                <input
+                  style={styles.input}
+                  type="number"
+                  name="budget"
+                  value={preferences.budget}
+                  onChange={handleChange}
+                />
+
               </div>
+
+
+              {/* BHK */}
+
+              <div style={styles.formGroup}>
+
+                <label style={styles.label}>
+                  BHK
+                </label>
+
+                <select
+                  style={styles.select}
+                  name="bhk"
+                  value={preferences.bhk}
+                  onChange={handleChange}
+                >
+                  <option value="1">
+                    1 BHK
+                  </option>
+
+                  <option value="2">
+                    2 BHK
+                  </option>
+
+                  <option value="3">
+                    3 BHK
+                  </option>
+
+                  <option value="4">
+                    4 BHK
+                  </option>
+                </select>
+
+              </div>
+
+
+              {/* AREA */}
+
+              <div style={styles.formGroup}>
+
+                <label style={styles.label}>
+                  Minimum Area
+                </label>
+
+                <input
+                  style={styles.input}
+                  type="number"
+                  name="area"
+                  value={preferences.area}
+                  onChange={handleChange}
+                />
+
+              </div>
+
+
+              {/* FURNISHING */}
+
+              <div style={styles.formGroup}>
+
+                <label style={styles.label}>
+                  Furnishing
+                </label>
+
+                <select
+                  style={styles.select}
+                  name="furnishing"
+                  value={preferences.furnishing}
+                  onChange={handleChange}
+                >
+                  <option value="Furnished">
+                    Furnished
+                  </option>
+
+                  <option value="Semi-Furnished">
+                    Semi-Furnished
+                  </option>
+
+                  <option value="Unfurnished">
+                    Unfurnished
+                  </option>
+                </select>
+
+              </div>
+
+
+              {/* PARKING */}
+
+              <div style={styles.formGroup}>
+
+                <label style={styles.label}>
+                  Parking
+                </label>
+
+                <select
+                  style={styles.select}
+                  name="parking"
+                  value={preferences.parking}
+                  onChange={handleChange}
+                >
+                  <option value="Yes">
+                    Yes
+                  </option>
+
+                  <option value="No">
+                    No
+                  </option>
+                </select>
+
+              </div>
+
+
+              {/* BUTTON */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  ...styles.button,
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {loading
+                  ? "Finding..."
+                  : "Find Best Properties →"}
+              </button>
+
+            </div>
+
+          </form>
+
+          {error && (
+            <div style={styles.error}>
+              {error}
+            </div>
+          )}
+
+        </div>
+
+
+        {/* =================================================
+            RESULTS
+        ================================================= */}
+
+        {recommendations.length > 0 && (
+
+          <>
+
+            <div style={styles.resultHeader}>
+
+              <h2 style={styles.resultTitle}>
+                Best properties for you
+              </h2>
 
             </div>
 
 
-            <form onSubmit={findMatches}>
+            {sortedRecommendations.map(
+              (property, index) => {
 
-              <div className="recommend-form-grid">
+                const rent =
+                  getRent(property);
 
-                {/* LOCATION */}
+                const area =
+                  getArea(property);
 
-                <div className="form-group">
+                const bhk =
+                  getBhk(property);
 
-                  <label>
-                    Location
-                  </label>
+                const furnishing =
+                  getFurnishing(property);
 
-                  <select
-                    name="location"
-                    value={preferences.location}
-                    onChange={handleChange}
-                    required
+                const parking =
+                  getParking(property);
+
+                const location =
+                  getLocation(property);
+
+                const name =
+                  getName(property);
+
+                const match =
+                  getMatch(property);
+
+                return (
+
+                  <div
+                    style={styles.card}
+                    key={
+                      property.id ||
+                      property._id ||
+                      index
+                    }
                   >
 
-                    <option value="">
-                      Select Location
-                    </option>
+                    {/* IMAGE AREA */}
 
-                    <option value="Raipur">
-                      Raipur
-                    </option>
+                    <div style={styles.image}>
 
-                    <option value="Bhilai">
-                      Bhilai
-                    </option>
+                      {index === 0 && (
+                        <div style={styles.badge}>
+                          BEST MATCH
+                        </div>
+                      )}
 
-                  </select>
-
-                </div>
+                    </div>
 
 
-                {/* LOCALITY */}
+                    {/* PROPERTY CONTENT */}
 
-                <div className="form-group">
+                    <div style={styles.cardBody}>
 
-                  <label>
-                    Locality
-                  </label>
+                      <div style={styles.titleRow}>
 
-                  <select
-                    name="locality"
-                    value={preferences.locality}
-                    onChange={handleChange}
-                    required
-                    disabled={!preferences.location}
-                  >
+                        <div>
 
-                    <option value="">
-                      Select Locality
-                    </option>
+                          <h3
+                            style={
+                              styles.propertyTitle
+                            }
+                          >
+                            {name}
+                          </h3>
 
-                    {availableLocalities.map(
-                      (locality) => (
-                        <option
-                          key={locality}
-                          value={locality}
+                          <p
+                            style={
+                              styles.location
+                            }
+                          >
+                            📍 {location}
+                          </p>
+
+                        </div>
+
+
+                        <div
+                          style={styles.price}
                         >
-                          {locality}
-                        </option>
-                      )
-                    )}
-
-                  </select>
-
-                </div>
-
-
-                {/* BUDGET */}
-
-                <div className="form-group">
-
-                  <label>
-                    Maximum Budget
-                  </label>
-
-                  <input
-                    type="number"
-                    name="budget"
-                    value={preferences.budget}
-                    onChange={handleChange}
-                  />
-
-                  <small>
-                    ₹ / month
-                  </small>
-
-                </div>
-
-
-                {/* BHK */}
-
-                <div className="form-group">
-
-                  <label>
-                    BHK
-                  </label>
-
-                  <select
-                    name="bhk"
-                    value={preferences.bhk}
-                    onChange={handleChange}
-                  >
-
-                    <option value="1">
-                      1 BHK
-                    </option>
-
-                    <option value="2">
-                      2 BHK
-                    </option>
-
-                    <option value="3">
-                      3 BHK
-                    </option>
-
-                    <option value="4">
-                      4 BHK
-                    </option>
-
-                  </select>
-
-                </div>
-
-
-                {/* AREA */}
-
-                <div className="form-group">
-
-                  <label>
-                    Minimum Area
-                  </label>
-
-                  <input
-                    type="number"
-                    name="area"
-                    value={preferences.area}
-                    onChange={handleChange}
-                  />
-
-                  <small>
-                    sq.ft
-                  </small>
-
-                </div>
-
-
-                {/* FURNISHING */}
-
-                <div className="form-group">
-
-                  <label>
-                    Furnishing
-                  </label>
-
-                  <select
-                    name="furnishing"
-                    value={preferences.furnishing}
-                    onChange={handleChange}
-                  >
-
-                    <option>
-                      Furnished
-                    </option>
-
-                    <option>
-                      Semi-Furnished
-                    </option>
-
-                    <option>
-                      Unfurnished
-                    </option>
-
-                  </select>
-
-                </div>
-
-
-                {/* PARKING */}
-
-                <div className="form-group">
-
-                  <label>
-                    Parking
-                  </label>
-
-                  <select
-                    name="parking"
-                    value={preferences.parking}
-                    onChange={handleChange}
-                  >
-
-                    <option>
-                      Yes
-                    </option>
-
-                    <option>
-                      No
-                    </option>
-
-                  </select>
-
-                </div>
-
-              </div>
-
-
-              {error ? (
-                <p className="form-error">
-                  {error}
-                </p>
-              ) : null}
-
-
-              <button
-                type="submit"
-                className="find-match-button"
-                disabled={loading}
-              >
-
-                {loading
-                  ? "Finding matches..."
-                  : "Find My Best Matches"}
-
-                <span>
-                  →
-                </span>
-
-              </button>
-
-            </form>
-
-          </div>
-
-
-          {/* RESULTS */}
-
-          {recommendations.length > 0 && (
-
-            <div className="recommend-results">
-
-              <div className="results-heading">
-
-                <div>
-
-                  <div className="section-label">
-                    MATCH RESULTS
-                  </div>
-
-                  <h2>
-                    Properties for you
-                  </h2>
-
-                </div>
-
-                <span>
-                  {recommendations.length} properties found
-                </span>
-
-              </div>
-
-
-              <div className="recommend-list">
-
-                {recommendations.map(
-                  (property, index) => (
-
-                    <div
-                      className="recommend-property"
-                      key={property.id}
-                    >
-
-                      <div className="recommend-image">
-
-                        {index === 0 && (
-                          <span className="best-badge">
-                            BEST MATCH
+                          ₹
+                          {rent.toLocaleString(
+                            "en-IN"
+                          )}
+
+                          <span
+                            style={
+                              styles.priceSmall
+                            }
+                          >
+                            /month
                           </span>
-                        )}
+                        </div>
 
                       </div>
 
 
-                      <div className="recommend-info">
+                      <div
+                        style={styles.divider}
+                      />
 
-                        <div className="recommend-title-row">
 
-                          <div>
+                      {/* DETAILS */}
 
-                            <h3>
-                              {property.name}
-                            </h3>
+                      <div
+                        style={styles.details}
+                      >
 
-                            <p>
-                              📍{" "}
-                              {property.location}
-                              {property.locality
-                                ? ` · ${property.locality}`
-                                : ""}
-                            </p>
+                        <span>
+                          🛏 {bhk} BHK
+                        </span>
 
+                        <span>
+                          📐 {area} sq.ft
+                        </span>
+
+                        <span>
+                          🛋 {furnishing}
+                        </span>
+
+                        <span>
+                          🚗 {parking}
+                        </span>
+
+                      </div>
+
+
+                      {/* BOTTOM */}
+
+                      <div
+                        style={styles.bottom}
+                      >
+
+                        <div
+                          style={styles.match}
+                        >
+
+                          <div
+                            style={
+                              styles.matchCircle
+                            }
+                          >
+                            {match}%
                           </div>
 
-                          <div className="recommend-price">
+                          <div
+                            style={
+                              styles.matchText
+                            }
+                          >
 
-                            ₹
-                            {property.rent.toLocaleString(
-                              "en-IN"
-                            )}
+                            <strong
+                              style={
+                                styles.matchStrong
+                              }
+                            >
+                              {match >= 90
+                                ? "Excellent Match"
+                                : match >= 80
+                                ? "Good Match"
+                                : "Possible Match"}
+                            </strong>
 
-                            <small>
-                              /month
+                            <small
+                              style={
+                                styles.matchSmall
+                              }
+                            >
+                              Based on your preferences
                             </small>
 
                           </div>
@@ -521,108 +1015,71 @@ function Recommendations() {
                         </div>
 
 
-                        <div className="recommend-details">
+                        {/* =================================================
+                            ANALYSIS BUTTON
+                        ================================================= */}
 
-                          <span>
-                            🛏 {property.bhk} BHK
-                          </span>
+                        <Link
+                          to="/analysis"
+                          state={{
+                            property: {
+                              ...property,
 
-                          <span>
-                            📐 {property.area} sq.ft
-                          </span>
+                              // Standardized values for Analysis.jsx
+                              name,
+                              rent,
+                              area,
+                              bhk,
+                              furnishing,
+                              parking,
+                              location,
 
-                          <span>
-                            🛋 {property.furnishing}
-                          </span>
-
-                          <span>
-                            🚗 {property.parking}
-                          </span>
-
-                          <span>
-                            {property.status_label}
-                          </span>
-
-                        </div>
-
-
-                        <div className="recommend-bottom">
-
-                          <div className="match-score">
-
-                            <div className="match-circle">
-                              {property.match}%
-                            </div>
-
-                            <div>
-
-                              <strong>
-                                {property.match >= 90
-                                  ? "Excellent Match"
-                                  : property.match >= 80
-                                  ? "Good Match"
-                                  : "Possible Match"}
-                              </strong>
-
-                              <small>
-                                Based on your preferences
-                              </small>
-
-                            </div>
-
-                          </div>
-
-
-                          <Link
-                            to="/predict"
-                            className="view-property"
-                          >
-                            Analyze →
-                          </Link>
-
-                        </div>
+                              search_preferences:
+                                preferences,
+                            },
+                          }}
+                          style={styles.analyze}
+                        >
+                          Analyze →
+                        </Link>
 
                       </div>
 
                     </div>
 
-                  )
-                )}
+                  </div>
+                );
+              }
+            )}
 
-              </div>
-
-            </div>
-
-          )}
+          </>
+        )}
 
 
-          {/* INITIAL STATE */}
+        {/* =================================================
+            EMPTY STATE
+        ================================================= */}
 
-          {recommendations.length === 0 && (
+        {!loading &&
+          recommendations.length === 0 &&
+          !error && (
 
-            <div className="recommend-empty">
-
-              <div className="recommend-empty-icon">
-                ✦
-              </div>
+            <div style={styles.empty}>
 
               <h3>
-                Tell us what you need
+                Find your ideal property
               </h3>
 
               <p>
-                Set your preferences above and we'll find
-                the properties that match you best.
+                Select your preferences above and
+                click "Find Best Properties".
               </p>
 
             </div>
 
           )}
 
-        </div>
-
-      </section>
-
+      </div>
     </div>
   );
 }
