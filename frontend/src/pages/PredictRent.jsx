@@ -1,26 +1,31 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { predictRent } from "../services/api";
 
+const INITIAL_FORM = {
+  location: "",
+  locality: "",
+  propertyType: "Apartment",
+  bhk: "2",
+  area: "",
+  bathrooms: "2",
+  furnishing: "Furnished",
+  parking: "Yes",
+  listedRent: "",
+};
+
+function formatRent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "—";
+  }
+
+  return `₹${Number(value).toLocaleString("en-IN")}`;
+}
+
 function PredictRent() {
-  const [formData, setFormData] = useState({
-    location: "",
-    locality: "",
-    propertyType: "Apartment",
-    bhk: "2",
-    area: "",
-    bathrooms: "2",
-    furnishing: "Furnished",
-    parking: "Yes",
-  });
-
+  const [formData, setFormData] = useState(INITIAL_FORM);
   const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  /*
-   * Localities from the actual rental data
-   */
+  const [error, setError] = useState("");
 
   const localities = {
     Raipur: [
@@ -40,7 +45,6 @@ function PredictRent() {
       "Telibandha",
       "Vidhan Sabha Road",
     ],
-
     Bhilai: [
       "Charoda",
       "Civic Centre",
@@ -62,11 +66,6 @@ function PredictRent() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    /*
-     * When the location changes,
-     * clear the previously selected locality.
-     */
-
     if (name === "location") {
       setFormData({
         ...formData,
@@ -79,84 +78,78 @@ function PredictRent() {
         [name]: value,
       });
     }
-
-    setResult(null);
-    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setError("");
+    const area = Number(formData.area);
+    const bhk = Number(formData.bhk);
+
+    if (!formData.location || !formData.locality) {
+      setError("Please select a location and locality.");
+      return;
+    }
+
+    if (!Number.isFinite(area) || area <= 100) {
+      setError("Area must be greater than 100 sq.ft.");
+      return;
+    }
+
+    if (!Number.isFinite(bhk) || bhk < 1) {
+      setError("BHK must be at least 1.");
+      return;
+    }
+
     setLoading(true);
+    setError("");
 
-    /*
-     * Locality is required for prediction.
-     */
-
-    if (!formData.location) {
-      setError("Please select a location.");
-      setLoading(false);
-      return;
-    }
-
-    if (!formData.locality) {
-      setError("Please select a locality.");
-      setLoading(false);
-      return;
-    }
+    const listedRent = Number(formData.listedRent);
 
     try {
       const prediction = await predictRent({
-        location: formData.location,
+        location: `${formData.locality}, ${formData.location}`,
         city: formData.location,
         locality: formData.locality,
-
         property_type: formData.propertyType,
-
-        bhk: Number(formData.bhk),
-
-        area_sqft: Number(formData.area),
-
+        bhk,
+        area_sqft: area,
         bathrooms: Number(formData.bathrooms),
-
         furnishing: formData.furnishing,
-
         parking: formData.parking,
+        listed_rent: Number.isFinite(listedRent) && listedRent > 0
+          ? listedRent
+          : null,
       });
 
-      setResult({
-        rent: prediction.predicted_rent,
-        min: prediction.min_rent,
-        max: prediction.max_rent,
-        city: prediction.city,
-        locality: prediction.locality,
-        status: prediction.status,
-      });
+      setResult(prediction);
     } catch (err) {
       setResult(null);
-      setError(err.message);
+      setError(err.message || "Unable to predict rent right now.");
     } finally {
       setLoading(false);
     }
   };
 
-  /*
-   * Get localities for selected city
-   */
+  const handleReset = () => {
+    setFormData(INITIAL_FORM);
+    setResult(null);
+    setError("");
+    setLoading(false);
+  };
 
-  const availableLocalities =
-    localities[formData.location] || [];
+  const availableLocalities = localities[formData.location] || [];
+  const statusClass =
+    result?.status === "Overpriced"
+      ? "overpriced"
+      : result?.status === "Underpriced"
+        ? "underpriced"
+        : "";
 
   return (
     <div className="predict-page">
-
-      {/* PAGE HEADER */}
-
       <section className="predict-header">
-
         <div className="predict-header-content">
-
           <div className="section-label">
             RENTAL PRICE INTELLIGENCE
           </div>
@@ -167,27 +160,16 @@ function PredictRent() {
           </h1>
 
           <p>
-            Enter the property details and RentSmart will estimate
-            its fair monthly rental price.
+            Enter the property details and RentSmart will
+            estimate its fair monthly rental price.
           </p>
-
         </div>
-
       </section>
 
-
-      {/* MAIN CONTENT */}
-
       <section className="predict-section">
-
         <div className="predict-container">
-
-          {/* FORM */}
-
           <div className="predict-form-card">
-
             <div className="form-heading">
-
               <h2>
                 Property Details
               </h2>
@@ -195,16 +177,10 @@ function PredictRent() {
               <p>
                 Tell us about the property you're evaluating.
               </p>
-
             </div>
 
-
             <form onSubmit={handleSubmit}>
-
-              {/* LOCATION */}
-
               <div className="form-group">
-
                 <label>
                   Location
                 </label>
@@ -215,28 +191,19 @@ function PredictRent() {
                   onChange={handleChange}
                   required
                 >
-
                   <option value="">
                     Select Location
                   </option>
-
                   <option value="Raipur">
                     Raipur
                   </option>
-
                   <option value="Bhilai">
                     Bhilai
                   </option>
-
                 </select>
-
               </div>
 
-
-              {/* LOCALITY */}
-
               <div className="form-group">
-
                 <label>
                   Locality
                 </label>
@@ -248,7 +215,6 @@ function PredictRent() {
                   required
                   disabled={!formData.location}
                 >
-
                   <option value="">
                     Select Locality
                   </option>
@@ -261,16 +227,10 @@ function PredictRent() {
                       {locality}
                     </option>
                   ))}
-
                 </select>
-
               </div>
 
-
-              {/* PROPERTY TYPE */}
-
               <div className="form-group">
-
                 <label>
                   Property Type
                 </label>
@@ -280,34 +240,23 @@ function PredictRent() {
                   value={formData.propertyType}
                   onChange={handleChange}
                 >
-
-                  <option>
+                  <option value="Apartment">
                     Apartment
                   </option>
-
-                  <option>
+                  <option value="House">
                     House
                   </option>
-
-                  <option>
+                  <option value="Villa">
                     Villa
                   </option>
-
-                  <option>
+                  <option value="Studio">
                     Studio
                   </option>
-
                 </select>
-
               </div>
 
-
-              {/* BHK + AREA */}
-
               <div className="form-row">
-
                 <div className="form-group">
-
                   <label>
                     BHK
                   </label>
@@ -317,34 +266,25 @@ function PredictRent() {
                     value={formData.bhk}
                     onChange={handleChange}
                   >
-
                     <option value="1">
                       1 BHK
                     </option>
-
                     <option value="2">
                       2 BHK
                     </option>
-
                     <option value="3">
                       3 BHK
                     </option>
-
                     <option value="4">
                       4 BHK
                     </option>
-
                     <option value="5">
                       5+ BHK
                     </option>
-
                   </select>
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Area
                   </label>
@@ -353,6 +293,7 @@ function PredictRent() {
                     type="number"
                     name="area"
                     placeholder="e.g. 950"
+                    min="101"
                     value={formData.area}
                     onChange={handleChange}
                     required
@@ -361,18 +302,11 @@ function PredictRent() {
                   <small>
                     sq.ft
                   </small>
-
                 </div>
-
               </div>
 
-
-              {/* BATHROOM + FURNISHING */}
-
               <div className="form-row">
-
                 <div className="form-group">
-
                   <label>
                     Bathrooms
                   </label>
@@ -382,30 +316,22 @@ function PredictRent() {
                     value={formData.bathrooms}
                     onChange={handleChange}
                   >
-
                     <option value="1">
                       1
                     </option>
-
                     <option value="2">
                       2
                     </option>
-
                     <option value="3">
                       3
                     </option>
-
                     <option value="4">
                       4+
                     </option>
-
                   </select>
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Furnishing
                   </label>
@@ -415,114 +341,181 @@ function PredictRent() {
                     value={formData.furnishing}
                     onChange={handleChange}
                   >
-
-                    <option>
+                    <option value="Furnished">
                       Furnished
                     </option>
-
-                    <option>
+                    <option value="Semi-Furnished">
                       Semi-Furnished
                     </option>
-
-                    <option>
+                    <option value="Unfurnished">
                       Unfurnished
                     </option>
-
                   </select>
-
                 </div>
-
               </div>
 
-
-              {/* PARKING */}
-
               <div className="form-group">
-
                 <label>
                   Parking Available
                 </label>
 
                 <div className="option-group">
-
                   <label className="radio-option">
-
                     <input
                       type="radio"
                       name="parking"
                       value="Yes"
-                      checked={
-                        formData.parking === "Yes"
-                      }
+                      checked={formData.parking === "Yes"}
                       onChange={handleChange}
                     />
-
                     Yes
-
                   </label>
 
-
                   <label className="radio-option">
-
                     <input
                       type="radio"
                       name="parking"
                       value="No"
-                      checked={
-                        formData.parking === "No"
-                      }
+                      checked={formData.parking === "No"}
                       onChange={handleChange}
                     />
-
                     No
-
                   </label>
-
                 </div>
-
               </div>
 
+              <div className="form-group">
+                <label>
+                  Listed rent (optional)
+                </label>
 
-              {/* ERROR */}
+                <input
+                  type="number"
+                  name="listedRent"
+                  placeholder="e.g. 15000"
+                  min="1"
+                  value={formData.listedRent}
+                  onChange={handleChange}
+                />
 
-              {error ? (
+                <small>
+                  Used to classify Fair / Overpriced / Underpriced
+                </small>
+              </div>
+
+              {error && (
                 <p className="form-error">
                   {error}
                 </p>
-              ) : null}
-
-
-              {/* BUTTON */}
+              )}
 
               <button
                 type="submit"
                 className="predict-button"
                 disabled={loading}
               >
-
-                {loading
-                  ? "Predicting..."
-                  : "Predict Fair Rent"}
-
+                {loading ? "Predicting..." : "Predict Fair Rent"}
                 <span>
                   →
                 </span>
-
               </button>
 
+              <button
+                type="button"
+                className="result-action"
+                onClick={handleReset}
+                style={{
+                  display: "block",
+                  marginTop: "16px",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                }}
+              >
+                Reset form
+              </button>
             </form>
-
           </div>
 
-
-          {/* RESULT */}
-
           <div className="prediction-result">
-
-            {!result ? (
-
+            {loading && (
               <div className="result-empty">
+                <div className="result-icon">
+                  ₹
+                </div>
+                <h3>
+                  Estimating fair rent
+                </h3>
+                <p>
+                  RentSmart is scoring this property
+                  with the trained rental model.
+                </p>
+              </div>
+            )}
 
+            {!loading && result && (
+              <div className="result-card">
+                <div className="result-label">
+                  FAIR RENT ESTIMATE
+                </div>
+
+                <div className="result-price">
+                  {formatRent(result.predicted_rent)}
+                  <small>
+                    /month
+                  </small>
+                </div>
+
+                <div className={`price-status ${statusClass}`.trim()}>
+                  {result.status}
+                  {result.listed_rent
+                    ? ` · listed ${formatRent(result.listed_rent)}`
+                    : " · no listed rent provided"}
+                </div>
+
+                <div className="price-range">
+                  <p>
+                    Expected rental range
+                  </p>
+                  <strong>
+                    {formatRent(result.min_rent)}
+                    {" – "}
+                    {formatRent(result.max_rent)}
+                  </strong>
+                </div>
+
+                <div className="price-range">
+                  <p>
+                    Neighborhood
+                  </p>
+                  <strong>
+                    {result.locality}, {result.city}
+                  </strong>
+                </div>
+
+                <div className="result-note">
+                  <strong>
+                    What this means
+                  </strong>
+                  <p>
+                    {result.status === "Overpriced" &&
+                      `The listed rent is about ${Math.abs(result.difference_pct || 0)}% above the predicted fair value.`}
+                    {result.status === "Underpriced" &&
+                      `The listed rent is about ${Math.abs(result.difference_pct || 0)}% below the predicted fair value.`}
+                    {result.status === "Fair" &&
+                      (result.listed_rent
+                        ? "The listed rent is within a fair band of the predicted value."
+                        : "This is the model’s estimated fair monthly rent for the inputs you provided.")}
+                    {" "}
+                    Change any field and predict again, or reset to start over.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!loading && !result && (
+              <div className="result-empty">
                 <div className="result-icon">
                   ₹
                 </div>
@@ -537,119 +530,24 @@ function PredictRent() {
                 </p>
 
                 <div className="result-tips">
-
                   <div>
                     ✓ Location-based analysis
                   </div>
-
                   <div>
                     ✓ Locality-based analysis
                   </div>
-
                   <div>
                     ✓ Property feature analysis
                   </div>
-
                   <div>
                     ✓ Market-based estimation
                   </div>
-
                 </div>
-
               </div>
-
-            ) : (
-
-              <div className="result-card">
-
-                <div className="result-label">
-                  ESTIMATED FAIR RENT
-                </div>
-
-                <div className="result-price">
-
-                  ₹
-                  {Number(
-                    result.rent
-                  ).toLocaleString("en-IN")}
-
-                  <small>
-                    /month
-                  </small>
-
-                </div>
-
-
-                <div className="price-status">
-
-                  <span>
-                    ✓
-                  </span>
-
-                  {result.locality},{" "}
-                  {result.city} ·{" "}
-                  {result.status} estimate
-
-                </div>
-
-
-                <div className="price-range">
-
-                  <p>
-                    Expected rental range
-                  </p>
-
-                  <strong>
-
-                    ₹
-                    {Number(
-                      result.min
-                    ).toLocaleString("en-IN")}
-
-                    {" – "}
-
-                    ₹
-                    {Number(
-                      result.max
-                    ).toLocaleString("en-IN")}
-
-                  </strong>
-
-                </div>
-
-
-                <div className="result-note">
-
-                  <strong>
-                    What this means
-                  </strong>
-
-                  <p>
-                    This estimate comes from the trained rent model
-                    using your location, locality, BHK, area,
-                    furnishing, and parking.
-                  </p>
-
-                </div>
-
-
-                <Link
-                  to="/compare"
-                  className="result-action"
-                >
-                  Compare Properties →
-                </Link>
-
-              </div>
-
             )}
-
           </div>
-
         </div>
-
       </section>
-
     </div>
   );
 }

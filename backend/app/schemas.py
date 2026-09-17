@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ============================================================
@@ -48,12 +48,12 @@ class RentPredictRequest(BaseModel):
     city: str | None = None
     locality: str | None = None
     property_type: str = "Apartment"
-    bhk: int = 2
-    area_sqft: float = 900
-    bathrooms: int = 2
+    bhk: int = Field(default=2, ge=1, le=10)
+    area_sqft: float = Field(default=900, gt=100)
+    bathrooms: int = Field(default=2, ge=1, le=10)
     furnishing: str = "Semi-Furnished"
     parking: str = "Yes"
-    listed_rent: float | None = None
+    listed_rent: float | None = Field(default=None, gt=0)
 
 
 class RentPredictResponse(BaseModel):

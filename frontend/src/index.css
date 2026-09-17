@@ -1313,6 +1313,16 @@ select {
   font-weight: 800;
 }
 
+.price-status.overpriced {
+  background: rgba(231, 76, 60, 0.12);
+  color: #ff8a7a;
+}
+
+.price-status.underpriced {
+  background: rgba(40, 194, 119, 0.12);
+  color: #55d99a;
+}
+
 .price-range {
   margin-top: 28px;
   padding-top: 22px;

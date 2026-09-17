@@ -105,11 +105,28 @@ def train() -> dict:
         .apply(lambda values: sorted(values.tolist()))
         .to_dict()
     )
+    neighborhood_averages = {}
+    grouped = (
+        df.groupby(["city", "locality"])["rent"]
+        .mean()
+        .round()
+        .astype(int)
+    )
+    for (city, loc), avg in grouped.items():
+        neighborhood_averages.setdefault(str(city), {})[str(loc)] = int(avg)
+
+    city_averages = {
+        str(city): int(round(avg))
+        for city, avg in df.groupby("city")["rent"].mean().items()
+    }
+
     meta = {
         "best_model": best_name,
         "features": FEATURES,
         "metrics": results,
         "localities": localities,
+        "neighborhood_averages": neighborhood_averages,
+        "city_averages": city_averages,
         "n_train": int(len(X_train)),
         "n_test": int(len(X_test)),
     }

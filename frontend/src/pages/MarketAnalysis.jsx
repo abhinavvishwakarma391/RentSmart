@@ -50,13 +50,11 @@ function MarketAnalysis() {
    */
 
   const bhkChart = useMemo(() => {
-
     if (!market?.bhk_breakdown?.length) {
       return null;
     }
 
     return {
-
       data: [
         {
           type: "pie",
@@ -70,7 +68,6 @@ function MarketAnalysis() {
           ),
 
           textinfo: "label+percent",
-
           textposition: "inside",
 
           hovertemplate:
@@ -83,7 +80,6 @@ function MarketAnalysis() {
       ],
 
       layout: {
-
         height: 320,
 
         margin: {
@@ -101,22 +97,18 @@ function MarketAnalysis() {
         },
 
         paper_bgcolor: "rgba(0,0,0,0)",
-
         plot_bgcolor: "rgba(0,0,0,0)",
 
         font: {
           family: "Inter, system-ui, sans-serif",
         },
-
       },
 
       config: {
         responsive: true,
         displayModeBar: false,
       },
-
     };
-
   }, [market]);
 
 
@@ -127,13 +119,11 @@ function MarketAnalysis() {
    */
 
   const furnishingChart = useMemo(() => {
-
     if (!market?.furnishing_breakdown?.length) {
       return null;
     }
 
     return {
-
       data: [
         {
           type: "pie",
@@ -147,7 +137,6 @@ function MarketAnalysis() {
           ),
 
           textinfo: "label+percent",
-
           textposition: "inside",
 
           hovertemplate:
@@ -160,7 +149,6 @@ function MarketAnalysis() {
       ],
 
       layout: {
-
         height: 320,
 
         margin: {
@@ -178,29 +166,23 @@ function MarketAnalysis() {
         },
 
         paper_bgcolor: "rgba(0,0,0,0)",
-
         plot_bgcolor: "rgba(0,0,0,0)",
 
         font: {
           family: "Inter, system-ui, sans-serif",
         },
-
       },
 
       config: {
         responsive: true,
         displayModeBar: false,
       },
-
     };
-
   }, [market]);
 
 
   return (
-
     <div className="market-page">
-
 
       {/* =====================================================
           HERO
@@ -251,13 +233,11 @@ function MarketAnalysis() {
               </h2>
 
               <p>
-
                 {loading
                   ? "Loading market overview..."
                   : `${
                       market?.summary?.listing_count || 0
                     } listings analyzed`}
-
               </p>
 
             </div>
@@ -365,7 +345,8 @@ function MarketAnalysis() {
 
                     <small>
                       {market.summary.listing_count}
-                      {" "}active listings
+                      {" "}
+                      active listings
                     </small>
 
                   </div>
@@ -470,17 +451,14 @@ function MarketAnalysis() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns:
-                      "1fr 1fr",
+                    gridTemplateColumns: "1fr 1fr",
                     gap: "30px",
                     alignItems: "center",
                   }}
                 >
 
 
-                  {/* =========================================
-                      BHK PIE CHART
-                  ========================================= */}
+                  {/* BHK PIE CHART */}
 
                   <div>
 
@@ -520,9 +498,7 @@ function MarketAnalysis() {
                   </div>
 
 
-                  {/* =========================================
-                      FURNISHING PIE CHART
-                  ========================================= */}
+                  {/* FURNISHING PIE CHART */}
 
                   <div>
 
@@ -560,51 +536,6 @@ function MarketAnalysis() {
                     )}
 
                   </div>
-
-                </div>
-
-              </div>
-
-
-              {/* =================================================
-                  LOCALITY OVERVIEW
-                  NO GRAPH / NO MAP
-              ================================================= */}
-
-              <div className="market-card">
-
-                <div className="market-card-header">
-
-                  <div>
-
-                    <h3>
-                      Locality Overview
-                    </h3>
-
-                    <p>
-                      Rental prices across localities
-                      in {city}
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-                <div
-                  style={{
-                    padding: "20px 0",
-                    textAlign: "center",
-                  }}
-                >
-
-                  <strong>
-                    {market.localities?.length || 0}
-                  </strong>
-
-                  <p>
-                    localities analyzed
-                  </p>
 
                 </div>
 
@@ -764,16 +695,17 @@ function MarketAnalysis() {
 
               </div>
 
+
             </>
 
           ) : null}
+
 
         </div>
 
       </section>
 
     </div>
-
   );
 }
 

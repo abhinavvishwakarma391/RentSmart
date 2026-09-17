@@ -22,9 +22,9 @@
       "r2": 0.9313
     },
     "xgboost": {
-      "mae": 1453.76,
-      "rmse": 2037.16,
-      "r2": 0.9507
+      "mae": 1497.3,
+      "rmse": 2089.45,
+      "r2": 0.9481
     }
   },
   "localities": {
@@ -61,6 +61,45 @@
       "Telibandha",
       "Vidhan Sabha Road"
     ]
+  },
+  "neighborhood_averages": {
+    "Bhilai": {
+      "Charoda": 8492,
+      "Civic Centre": 10900,
+      "Junwani": 13817,
+      "Kohka": 8829,
+      "Maitri Nagar": 13250,
+      "Nehru Nagar": 11994,
+      "Power House": 10956,
+      "Risali": 13131,
+      "Sector 5": 11376,
+      "Sector 7": 13547,
+      "Sector 9": 14228,
+      "Shanti Nagar": 11106,
+      "Smriti Nagar": 9107,
+      "Supela": 10129
+    },
+    "Raipur": {
+      "Avanti Vihar": 21340,
+      "Civil Lines": 24865,
+      "Devendra Nagar": 24068,
+      "Kabir Nagar": 19484,
+      "Kachna": 21876,
+      "Katora Talab": 24765,
+      "Magneto Mall Area": 21952,
+      "Mowa": 18014,
+      "Naya Raipur": 21681,
+      "Pandri": 21920,
+      "Saddu": 22835,
+      "Sarona": 18841,
+      "Shankar Nagar": 24095,
+      "Telibandha": 27933,
+      "Vidhan Sabha Road": 19462
+    }
+  },
+  "city_averages": {
+    "Bhilai": 11552,
+    "Raipur": 22191
   },
   "n_train": 416,
   "n_test": 104

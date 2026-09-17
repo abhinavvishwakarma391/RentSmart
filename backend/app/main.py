@@ -342,7 +342,14 @@ def predict_fair_rent(
 
         raise HTTPException(
             status_code=503,
-            detail=str(exc),
+            detail=str(exc) or "Rent prediction model is unavailable.",
+        ) from exc
+
+    except OSError as exc:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Rent prediction model could not be loaded. Please try again later.",
         ) from exc
 
 

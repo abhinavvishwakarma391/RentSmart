@@ -519,7 +519,6 @@ function Analysis() {
 
             <div className="result-card">
 
-
               <div className="result-label">
                 AI PROPERTY ANALYSIS
               </div>
@@ -536,17 +535,6 @@ function Analysis() {
                 <small>
                   /month
                 </small>
-
-              </div>
-
-
-              <div className="price-status">
-
-                <span>
-                  ✓
-                </span>
-
-                {statusText}
 
               </div>
 
@@ -636,12 +624,15 @@ function Analysis() {
                 </strong>
 
                 <p>
+
                   {statusDescription}
                   {" "}
+
                   The analysis considers the property's
                   location, locality, BHK, area, bathrooms,
                   furnishing and parking using the trained
                   RentSmart rental-price model.
+
                 </p>
 
               </div>
@@ -658,13 +649,17 @@ function Analysis() {
                   </strong>
 
                   <p>
+
                     This property matched
                     {" "}
+
                     <strong>
                       {property.match}%
                     </strong>
+
                     {" "}
                     of your selected preferences.
+
                   </p>
 
                 </div>

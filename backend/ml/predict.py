@@ -1,4 +1,5 @@
 from functools import lru_cache
+import json
 import joblib
 import pandas as pd
 
@@ -11,6 +12,10 @@ from .preprocess import (
 )
 
 MODEL_PATH = ARTIFACTS_DIR / "rent_model.joblib"
+CITY_DEFAULT_LOCALITY = {
+    "Raipur": "Shankar Nagar",
+    "Bhilai": "Smriti Nagar",
+}
 
 
 @lru_cache(maxsize=1)
@@ -20,6 +25,14 @@ def load_model():
             "Trained model not found. Run: python -m ml.train from the backend folder."
         )
     return joblib.load(MODEL_PATH)
+
+
+@lru_cache(maxsize=1)
+def _metrics() -> dict:
+    meta_path = ARTIFACTS_DIR / "metrics.json"
+    if not meta_path.exists():
+        return {}
+    return json.loads(meta_path.read_text(encoding="utf-8"))
 
 
 def parse_location(location: str, city: str | None = None, locality: str | None = None):
@@ -51,13 +64,44 @@ def parse_location(location: str, city: str | None = None, locality: str | None 
 
 
 def _known_localities() -> dict:
-    import json
+    return _metrics().get("localities", {})
 
-    meta_path = ARTIFACTS_DIR / "metrics.json"
-    if not meta_path.exists():
-        return {}
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    return meta.get("localities", {})
+
+def _resolve_known_locality(city: str, locality: str | None) -> tuple[str, bool]:
+    """Map a locality onto a trained neighborhood. Unseen names fall back."""
+    known = _known_localities().get(city, [])
+    lookup = {name.lower(): name for name in known}
+    if locality:
+        key = locality.strip().lower()
+        if key in lookup:
+            return lookup[key], False
+        for name_key, name in lookup.items():
+            if key in name_key or name_key in key:
+                return name, False
+
+    default_name = CITY_DEFAULT_LOCALITY.get(city, "Shankar Nagar")
+    if default_name.lower() in lookup:
+        return lookup[default_name.lower()], True
+    if known:
+        return known[0], True
+    return default_name, True
+
+
+def _neighborhood_average(city: str, locality: str | None = None) -> float | None:
+    meta = _metrics()
+    if locality:
+        local_avg = (
+            meta.get("neighborhood_averages", {})
+            .get(city, {})
+            .get(locality)
+        )
+        if local_avg is not None:
+            return float(local_avg)
+
+    city_avg = meta.get("city_averages", {}).get(city)
+    if city_avg is not None:
+        return float(city_avg)
+    return None
 
 
 def classify_price(listed_rent: float | None, fair_rent: float) -> dict:
@@ -99,12 +143,16 @@ def predict_rent(
     parking: str = "Yes",
     listed_rent: float | None = None,
 ) -> dict:
-    resolved_city, resolved_locality = parse_location(location, city, locality)
+    resolved_city, parsed_locality = parse_location(location, city, locality)
+    model_locality, unseen_locality = _resolve_known_locality(
+        resolved_city, parsed_locality
+    )
+
     row = pd.DataFrame(
         [
             {
                 "city": resolved_city,
-                "locality": resolved_locality,
+                "locality": model_locality,
                 "property_type": normalize_property_type(property_type),
                 "bhk": int(max(1, min(5, bhk))),
                 "area_sqft": float(area_sqft),
@@ -117,13 +165,19 @@ def predict_rent(
 
     model = load_model()
     fair_rent = float(model.predict(row)[0])
+
+    if unseen_locality:
+        neighborhood_avg = _neighborhood_average(resolved_city)
+        if neighborhood_avg is not None:
+            fair_rent = neighborhood_avg
+
     fair_rent = max(2500, int(round(fair_rent / 100) * 100))
     band = max(800, int(round(fair_rent * 0.08 / 100) * 100))
     price = classify_price(listed_rent, fair_rent)
 
     return {
         "city": resolved_city,
-        "locality": resolved_locality,
+        "locality": parsed_locality if unseen_locality else model_locality,
         "predicted_rent": fair_rent,
         "min_rent": fair_rent - band,
         "max_rent": fair_rent + band,
